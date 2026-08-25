@@ -13,6 +13,7 @@ endif()
 
 # Persistent backend build directory (protected from clean/rm -rf build/)
 set(SK265_BACKEND_CACHE_DIR "${CMAKE_SOURCE_DIR}/.build_x265" CACHE PATH "Directory for cached x265 multi-depth libraries")
+set(SK265_FFMPEG_CACHE_DIR "${CMAKE_SOURCE_DIR}/.build_ffmpeg" CACHE PATH "Directory for cached FFmpeg static libraries")
 
 include(FetchContent)
 
@@ -31,6 +32,7 @@ include_directories(
     ${CMAKE_BINARY_DIR}/generated
     ${SK265_BACKEND_CACHE_DIR}/8bit
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/x265/source
+    ${SK265_FFMPEG_CACHE_DIR}/include
 )
 
 # Imported multi-depth x265 static libraries from persistent cache
@@ -42,6 +44,22 @@ set_target_properties(x265_10bit PROPERTIES IMPORTED_LOCATION "${SK265_BACKEND_C
 
 add_library(x265_12bit STATIC IMPORTED)
 set_target_properties(x265_12bit PROPERTIES IMPORTED_LOCATION "${SK265_BACKEND_CACHE_DIR}/12bit/libx265.a")
+
+# Imported FFmpeg static libraries from persistent cache
+add_library(avformat STATIC IMPORTED)
+set_target_properties(avformat PROPERTIES IMPORTED_LOCATION "${SK265_FFMPEG_CACHE_DIR}/lib/libavformat.a")
+
+add_library(avcodec STATIC IMPORTED)
+set_target_properties(avcodec PROPERTIES IMPORTED_LOCATION "${SK265_FFMPEG_CACHE_DIR}/lib/libavcodec.a")
+
+add_library(swscale STATIC IMPORTED)
+set_target_properties(swscale PROPERTIES IMPORTED_LOCATION "${SK265_FFMPEG_CACHE_DIR}/lib/libswscale.a")
+
+add_library(swresample STATIC IMPORTED)
+set_target_properties(swresample PROPERTIES IMPORTED_LOCATION "${SK265_FFMPEG_CACHE_DIR}/lib/libswresample.a")
+
+add_library(avutil STATIC IMPORTED)
+set_target_properties(avutil PROPERTIES IMPORTED_LOCATION "${SK265_FFMPEG_CACHE_DIR}/lib/libavutil.a")
 
 # Configure L-SMASH static library
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/generated/lsmash_config")
@@ -119,6 +137,7 @@ add_executable(sk265
     src/pipeline/input/y4m_input.cpp
     src/pipeline/input/avisynth_input.cpp
     src/pipeline/input/vapoursynth_input.cpp
+    src/pipeline/input/lavf_input.cpp
     src/pipeline/output/raw_output.cpp
     src/pipeline/output/mp4_output.cpp
 )
@@ -128,9 +147,14 @@ target_link_libraries(sk265 PRIVATE
     x265_10bit
     x265_12bit
     lsmash
+    avformat
+    avcodec
+    swscale
+    swresample
+    avutil
 )
 if(WIN32)
-    target_link_libraries(sk265 PRIVATE ws2_32)
+    target_link_libraries(sk265 PRIVATE ws2_32 bcrypt secur32 strmiids mfplat mfuuid ole32 winpthread)
 endif()
 
 enable_testing()

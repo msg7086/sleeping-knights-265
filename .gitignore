@@ -1,5 +1,7 @@
 build/
 .build_x265/
+.build_ffmpeg/
+tmp/
 .vs/
 .vscode/
 *.user

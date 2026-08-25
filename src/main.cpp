@@ -10,6 +10,7 @@
 #include "pipeline/input/y4m_input.h"
 #include "pipeline/input/avisynth_input.h"
 #include "pipeline/input/vapoursynth_input.h"
+#include "pipeline/input/lavf_input.h"
 #include "pipeline/output/raw_output.h"
 #include "pipeline/output/mp4_output.h"
 #include "pipeline/bounded_queue.h"
@@ -44,7 +45,13 @@ int main(int argc, char** argv) {
 
     // 1. Select and open input source
     std::unique_ptr<sk265::pipeline::input::IInput> input;
-    if (opts.inputPath.size() > 4 && opts.inputPath.substr(opts.inputPath.size() - 4) == ".avs") {
+    auto hasExt = [](const std::string& path, const std::string& ext) {
+        if (path.size() < ext.size()) return false;
+        return std::equal(ext.rbegin(), ext.rend(), path.rbegin(),
+                          [](char a, char b) { return std::tolower(static_cast<unsigned char>(a)) == std::tolower(static_cast<unsigned char>(b)); });
+    };
+
+    if (hasExt(opts.inputPath, ".avs")) {
         auto avs = std::make_unique<sk265::pipeline::input::AviSynthInput>();
         if (!opts.avsLibPath.empty()) {
             avs->setCustomLibraryPath(opts.avsLibPath);
@@ -53,7 +60,7 @@ int main(int argc, char** argv) {
             avs->setSeekFrame(opts.seekFrame);
         }
         input = std::move(avs);
-    } else if (opts.inputPath.size() > 4 && opts.inputPath.substr(opts.inputPath.size() - 4) == ".vpy") {
+    } else if (hasExt(opts.inputPath, ".vpy")) {
         auto vpy = std::make_unique<sk265::pipeline::input::VapourSynthInput>();
         if (!opts.vpyLibPath.empty()) {
             vpy->setCustomLibraryPath(opts.vpyLibPath);
@@ -62,8 +69,14 @@ int main(int argc, char** argv) {
             vpy->setSeekFrame(opts.seekFrame);
         }
         input = std::move(vpy);
-    } else {
+    } else if (hasExt(opts.inputPath, ".y4m") || opts.inputPath == "-") {
         input = std::make_unique<sk265::pipeline::input::Y4mInput>();
+    } else {
+        auto lavf = std::make_unique<sk265::pipeline::input::LavfInput>();
+        if (opts.seekFrame > 0) {
+            lavf->setSeekFrame(opts.seekFrame);
+        }
+        input = std::move(lavf);
     }
 
     if (!input->open(opts.inputPath)) {

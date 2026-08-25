@@ -7,6 +7,7 @@ add_executable(sk265_tests
     test_y4m_input.cpp
     test_avisynth_input.cpp
     test_vapoursynth_input.cpp
+    test_lavf_input.cpp
     test_raw_output.cpp
     test_mp4_output.cpp
     test_golden_cross_validation.cpp
@@ -20,6 +21,7 @@ add_executable(sk265_tests
     ../src/pipeline/input/y4m_input.cpp
     ../src/pipeline/input/avisynth_input.cpp
     ../src/pipeline/input/vapoursynth_input.cpp
+    ../src/pipeline/input/lavf_input.cpp
     ../src/pipeline/output/raw_output.cpp
     ../src/pipeline/output/mp4_output.cpp
 )
@@ -30,9 +32,14 @@ target_link_libraries(sk265_tests PRIVATE
     x265_10bit
     x265_12bit
     lsmash
+    avformat
+    avcodec
+    swscale
+    swresample
+    avutil
 )
 if(WIN32)
-    target_link_libraries(sk265_tests PRIVATE ws2_32)
+    target_link_libraries(sk265_tests PRIVATE ws2_32 bcrypt secur32 strmiids mfplat mfuuid ole32 winpthread)
 endif()
 
 include(CTest)

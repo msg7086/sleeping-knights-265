@@ -4,3 +4,7 @@
 [submodule "third_party/l-smash"]
 	path = third_party/l-smash
 	url = https://github.com/HomeOfAviSynthPlusEvolution/l-smash.git
+[submodule "third_party/ffmpeg"]
+	path = third_party/ffmpeg
+	url = https://github.com/HomeOfAviSynthPlusEvolution/FFmpeg.git
+	branch = custom-patches-for-lsmashsource
