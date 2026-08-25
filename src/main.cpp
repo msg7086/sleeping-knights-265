@@ -10,6 +10,7 @@
 #include "pipeline/input/avisynth_input.h"
 #include "pipeline/input/vapoursynth_input.h"
 #include "pipeline/output/raw_output.h"
+#include "pipeline/output/mp4_output.h"
 #include "pipeline/bounded_queue.h"
 #include "utils/progress.h"
 #include "utils/signal_handler.h"
@@ -101,6 +102,15 @@ int main(int argc, char** argv) {
     param->sourceBitDepth = info.bitDepth;
     param->internalCsp = info.colorSpace;
 
+    bool isMp4Output = (opts.outputPath.size() >= 4 &&
+        (opts.outputPath.substr(opts.outputPath.size() - 4) == ".mp4" ||
+         opts.outputPath.substr(opts.outputPath.size() - 4) == ".MP4"));
+
+    if (isMp4Output) {
+        param->bAnnexB = false;
+        param->bRepeatHeaders = false;
+    }
+
     // Forward pass-through parameters directly to x265_param_parse
     for (const auto& [name, value] : opts.encoderParams) {
         if (name == "preset" || name == "tune") continue;
@@ -119,7 +129,13 @@ int main(int argc, char** argv) {
     }
 
     // 5. Open output destination
-    sk265::pipeline::output::RawOutput output;
+    std::unique_ptr<sk265::pipeline::output::IOutput> output;
+    if (isMp4Output) {
+        output = std::make_unique<sk265::pipeline::output::Mp4Output>();
+    } else {
+        output = std::make_unique<sk265::pipeline::output::RawOutput>();
+    }
+
     sk265::pipeline::output::OutputConfig outCfg;
     outCfg.outputPath = opts.outputPath;
     outCfg.width = info.width;
@@ -127,8 +143,14 @@ int main(int argc, char** argv) {
     outCfg.fpsNum = info.fpsNum;
     outCfg.fpsDen = info.fpsDen;
     outCfg.bitDepth = bitDepth;
+    outCfg.sarWidth = param->vui.sarWidth;
+    outCfg.sarHeight = param->vui.sarHeight;
+    outCfg.colorPrimaries = param->vui.colorPrimaries;
+    outCfg.transferCharacteristics = param->vui.transferCharacteristics;
+    outCfg.matrixCoeffs = param->vui.matrixCoeffs;
+    outCfg.fullRange = (param->vui.bEnableVideoFullRangeFlag == 1);
 
-    if (!output.open(outCfg)) {
+    if (!output->open(outCfg)) {
         std::cerr << "sk265[error]: Failed to open output destination: " << opts.outputPath << "\n";
         return 1;
     }
@@ -138,7 +160,7 @@ int main(int argc, char** argv) {
     uint32_t nalCount = 0;
     int headerBytes = api->encoder_headers(encoder.raw(), &nals, &nalCount);
     if (headerBytes > 0 && nalCount > 0) {
-        if (!output.writeHeaders(nals, nalCount)) {
+        if (!output->writeHeaders(nals, nalCount)) {
             std::cerr << "sk265[error]: Failed to write headers to output\n";
             return 1;
         }
@@ -185,6 +207,8 @@ int main(int argc, char** argv) {
 
     int framesEncoded = 0;
     uint64_t totalBytesEncoded = 0;
+    int64_t largestPts = -1;
+    int64_t secondLargestPts = -1;
     auto startTime = std::chrono::steady_clock::now();
 
     while (true) {
@@ -226,7 +250,11 @@ int main(int argc, char** argv) {
         }
 
         if (bytes > 0 && nalCount > 0) {
-            output.writeFrame(nals, nalCount, *pic_out.raw());
+            if (pic_out->pts > largestPts) {
+                secondLargestPts = largestPts;
+                largestPts = pic_out->pts;
+            }
+            output->writeFrame(nals, nalCount, *pic_out.raw());
             totalBytesEncoded += bytes;
         }
 
@@ -242,13 +270,17 @@ int main(int argc, char** argv) {
         if (bytes <= 0) {
             break;
         }
-        output.writeFrame(nals, nalCount, *pic_out.raw());
+        if (pic_out->pts > largestPts) {
+            secondLargestPts = largestPts;
+            largestPts = pic_out->pts;
+        }
+        output->writeFrame(nals, nalCount, *pic_out.raw());
         totalBytesEncoded += bytes;
         progress.update(framesEncoded, totalBytesEncoded);
     }
 
     progress.finish(framesEncoded);
-    output.close();
+    output->close(largestPts, secondLargestPts);
 
     auto elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - startTime).count();

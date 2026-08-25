@@ -1,15 +1,7 @@
 #pragma once
 #include <string>
 #include <cstdint>
-
-#ifndef X265_H
-struct x265_nal {
-    uint32_t type;
-    uint32_t sizeBytes;
-    uint8_t* payload;
-};
-struct x265_picture;
-#endif
+#include "core/x265_api.h"
 
 namespace sk265::pipeline::output {
 
@@ -22,7 +14,9 @@ struct OutputConfig {
     int bitDepth{8};
     int colorSpace{0};
 
-    // HDR / Dolby Vision / Colorimetry metadata reservation
+    // Aspect ratio & HDR / Dolby Vision / Colorimetry metadata reservation
+    int sarWidth{0};
+    int sarHeight{0};
     std::string doviRpuPath;
     std::string hdr10plusPath;
     int colorPrimaries{-1};
