@@ -13,6 +13,9 @@ struct CliOptions {
     bool showHelp{false};
     bool showVersion{false};
 
+    std::string doviRpuPath;
+    std::string qpfilePath;
+
     // Standardized encoder parameters for pass-through to x265_param_parse
     std::unordered_map<std::string, std::string> encoderParams;
 };

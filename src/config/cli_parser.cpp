@@ -5,13 +5,24 @@ namespace sk265::config {
 
 CliOptions CliParser::parse(const std::vector<std::string>& args) {
     CliOptions opts;
+
+    auto isValue = [](const std::string& s) -> bool {
+        if (s.empty()) return false;
+        if (s[0] != '-') return true;
+        // Negative number or offset (e.g. -2, -2:-2, -0.5) is a value, not a flag
+        if (s.size() > 1 && (std::isdigit(static_cast<unsigned char>(s[1])) || s[1] == '.')) {
+            return true;
+        }
+        return false;
+    };
+
+    auto getNext = [&](size_t& idx) -> std::string {
+        if (idx + 1 < args.size() && isValue(args[idx + 1])) return args[++idx];
+        return "";
+    };
+
     for (size_t i = 1; i < args.size(); ++i) {
         const std::string& arg = args[i];
-
-        auto getNext = [&](size_t& idx) -> std::string {
-            if (idx + 1 < args.size()) return args[++idx];
-            return "";
-        };
 
         if (arg == "-h" || arg == "--help") {
             opts.showHelp = true;
@@ -30,10 +41,32 @@ CliOptions CliParser::parse(const std::vector<std::string>& args) {
         } else if (arg == "--seek") {
             std::string val = getNext(i);
             if (!val.empty()) opts.seekFrame = std::stoi(val);
+        } else if (arg == "--dolby-vision-rpu") {
+            opts.doviRpuPath = getNext(i);
+        } else if (arg == "--qpfile") {
+            opts.qpfilePath = getNext(i);
         } else if (arg == "-p" || arg == "--preset") {
             opts.encoderParams["preset"] = getNext(i);
         } else if (arg == "-t" || arg == "--tune") {
             opts.encoderParams["tune"] = getNext(i);
+        } else if (arg == "-P" || arg == "--profile") {
+            opts.encoderParams["profile"] = getNext(i);
+        } else if (arg == "-F" || arg == "--frame-threads") {
+            opts.encoderParams["frame-threads"] = getNext(i);
+        } else if (arg == "-r" || arg == "--recon") {
+            opts.encoderParams["recon"] = getNext(i);
+        } else if (arg == "-I" || arg == "--keyint") {
+            opts.encoderParams["keyint"] = getNext(i);
+        } else if (arg == "-b" || arg == "--bframes") {
+            opts.encoderParams["bframes"] = getNext(i);
+        } else if (arg == "-s" || arg == "--ctu") {
+            opts.encoderParams["ctu"] = getNext(i);
+        } else if (arg == "-q" || arg == "--qp") {
+            opts.encoderParams["qp"] = getNext(i);
+        } else if (arg == "-m" || arg == "--subme") {
+            opts.encoderParams["subme"] = getNext(i);
+        } else if (arg == "-w" || arg == "--weightp") {
+            opts.encoderParams["weightp"] = "1";
         } else if (arg == "--crf") {
             opts.encoderParams["crf"] = getNext(i);
         } else if (arg.rfind("--", 0) == 0) {
@@ -46,10 +79,17 @@ CliOptions CliParser::parse(const std::vector<std::string>& args) {
             } else {
                 std::string key = raw;
                 std::string val = "true";
-                if (i + 1 < args.size() && args[i + 1].rfind("-", 0) != 0) {
+                if (i + 1 < args.size() && isValue(args[i + 1])) {
                     val = args[++i];
                 }
                 opts.encoderParams[key] = val;
+            }
+        } else if (arg[0] != '-') {
+            // Positional argument support: infile [outfile]
+            if (opts.inputPath.empty()) {
+                opts.inputPath = arg;
+            } else if (opts.outputPath.empty()) {
+                opts.outputPath = arg;
             }
         }
     }
