@@ -1,5 +1,11 @@
 #include "pipeline/input/y4m_input.h"
 #include <sstream>
+#include <iostream>
+
+#ifdef _WIN32
+#include <fcntl.h>
+#include <io.h>
+#endif
 
 namespace sk265::pipeline::input {
 
@@ -15,6 +21,13 @@ void Y4mInput::close() {
 }
 
 bool Y4mInput::open(const std::string& path) {
+    if (path == "-") {
+#ifdef _WIN32
+        _setmode(_fileno(stdin), _O_BINARY);
+#endif
+        return openFromStream(std::cin);
+    }
+
     fileStream_ = std::make_unique<std::ifstream>(path, std::ios::binary);
     if (!fileStream_->is_open()) return false;
     return openFromStream(*fileStream_);

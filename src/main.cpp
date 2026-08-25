@@ -9,6 +9,7 @@
 #include "pipeline/input/avisynth_input.h"
 #include "pipeline/output/raw_output.h"
 #include "utils/progress.h"
+#include "utils/signal_handler.h"
 #include "version.h"
 
 static void printBanner() {
@@ -16,6 +17,7 @@ static void printBanner() {
 }
 
 int main(int argc, char** argv) {
+    sk265::utils::installSignalHandler();
     auto opts = sk265::config::CliParser::parse(argc, argv);
 
     if (opts.showHelp || (opts.inputPath.empty() && opts.outputPath.empty() && !opts.showVersion)) {
@@ -138,6 +140,11 @@ int main(int argc, char** argv) {
     auto startTime = std::chrono::steady_clock::now();
 
     while (true) {
+        if (sk265::utils::isInterrupted()) {
+            std::cerr << "\nsk265[info]: Interrupt received, flushing remaining frames...\n";
+            break;
+        }
+
         if (opts.frameCount > 0 && framesEncoded >= opts.frameCount) {
             break;
         }
@@ -202,5 +209,5 @@ int main(int argc, char** argv) {
     std::cerr << "sk265[info]: Encoded " << framesEncoded << " frames in "
               << (elapsedMs / 1000.0) << "s (" << fps << " fps)\n";
 
-    return 0;
+    return sk265::utils::isInterrupted() ? 2 : 0;
 }
