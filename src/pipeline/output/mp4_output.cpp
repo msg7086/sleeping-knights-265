@@ -5,6 +5,49 @@
 
 namespace sk265::pipeline::output {
 
+struct ParsedNalu {
+    const uint8_t* data{nullptr};
+    size_t size{0};
+    uint8_t type{0};
+};
+
+static ParsedNalu parseNal(const x265_nal& nal) {
+    ParsedNalu res{};
+    if (nal.sizeBytes < 4 || !nal.payload) return res;
+
+    // Check for Annex-B start code: 00 00 01 or 00 00 00 01
+    if (nal.payload[0] == 0 && nal.payload[1] == 0) {
+        if (nal.payload[2] == 1) {
+            res.data = nal.payload + 3;
+            res.size = nal.sizeBytes - 3;
+        } else if (nal.payload[2] == 0 && nal.payload[3] == 1) {
+            res.data = nal.payload + 4;
+            res.size = nal.sizeBytes - 4;
+        } else {
+            res.data = nal.payload + 4;
+            res.size = nal.sizeBytes - 4;
+        }
+    } else {
+        res.data = nal.payload + 4;
+        res.size = nal.sizeBytes - 4;
+    }
+
+    if (res.size > 0) {
+        res.type = (res.data[0] >> 1) & 0x3F;
+    }
+    return res;
+}
+
+static void appendNalToSample(std::vector<uint8_t>& buf, const ParsedNalu& nalu) {
+    if (nalu.size == 0 || !nalu.data) return;
+    uint32_t len = static_cast<uint32_t>(nalu.size);
+    buf.push_back(static_cast<uint8_t>((len >> 24) & 0xFF));
+    buf.push_back(static_cast<uint8_t>((len >> 16) & 0xFF));
+    buf.push_back(static_cast<uint8_t>((len >> 8) & 0xFF));
+    buf.push_back(static_cast<uint8_t>(len & 0xFF));
+    buf.insert(buf.end(), nalu.data, nalu.data + nalu.size);
+}
+
 Mp4Output::Mp4Output() = default;
 
 Mp4Output::~Mp4Output() {
@@ -150,15 +193,25 @@ bool Mp4Output::open(const OutputConfig& config) {
 bool Mp4Output::writeHeaders(const x265_nal* nals, uint32_t nalCount) {
     if (!root_ || !track_ || !summary_ || nalCount < 3) return false;
 
-    // In non-annexB mode, NALs are prefixed with 4-byte big-endian size
     constexpr uint32_t NALU_LENGTH_SIZE = 4;
-    uint32_t vps_size = nals[0].sizeBytes >= NALU_LENGTH_SIZE ? nals[0].sizeBytes - NALU_LENGTH_SIZE : 0;
-    uint32_t sps_size = nals[1].sizeBytes >= NALU_LENGTH_SIZE ? nals[1].sizeBytes - NALU_LENGTH_SIZE : 0;
-    uint32_t pps_size = nals[2].sizeBytes >= NALU_LENGTH_SIZE ? nals[2].sizeBytes - NALU_LENGTH_SIZE : 0;
+    ParsedNalu vpsNal{};
+    ParsedNalu spsNal{};
+    ParsedNalu ppsNal{};
 
-    uint8_t* vps = nals[0].payload + NALU_LENGTH_SIZE;
-    uint8_t* sps = nals[1].payload + NALU_LENGTH_SIZE;
-    uint8_t* pps = nals[2].payload + NALU_LENGTH_SIZE;
+    for (uint32_t i = 0; i < nalCount; ++i) {
+        auto parsed = parseNal(nals[i]);
+        if (parsed.type == 32 && !vpsNal.data) {
+            vpsNal = parsed;
+        } else if (parsed.type == 33 && !spsNal.data) {
+            spsNal = parsed;
+        } else if (parsed.type == 34 && !ppsNal.data) {
+            ppsNal = parsed;
+        } else if (parsed.type != 32 && parsed.type != 33 && parsed.type != 34) {
+            appendNalToSample(seiBuffer_, parsed);
+        }
+    }
+
+    if (!vpsNal.data || !spsNal.data || !ppsNal.data) return false;
 
     lsmash_codec_specific_t* cs = lsmash_create_codec_specific_data(
         LSMASH_CODEC_SPECIFIC_DATA_TYPE_ISOM_VIDEO_HEVC,
@@ -169,9 +222,9 @@ bool Mp4Output::writeHeaders(const x265_nal* nals, uint32_t nalCount) {
     auto* param = reinterpret_cast<lsmash_hevc_specific_parameters_t*>(cs->data.structured);
     param->lengthSizeMinusOne = NALU_LENGTH_SIZE - 1;
 
-    if (lsmash_append_hevc_dcr_nalu(param, HEVC_DCR_NALU_TYPE_VPS, vps, vps_size) != 0 ||
-        lsmash_append_hevc_dcr_nalu(param, HEVC_DCR_NALU_TYPE_SPS, sps, sps_size) != 0 ||
-        lsmash_append_hevc_dcr_nalu(param, HEVC_DCR_NALU_TYPE_PPS, pps, pps_size) != 0) {
+    if (lsmash_append_hevc_dcr_nalu(param, HEVC_DCR_NALU_TYPE_VPS, const_cast<uint8_t*>(vpsNal.data), static_cast<uint32_t>(vpsNal.size)) != 0 ||
+        lsmash_append_hevc_dcr_nalu(param, HEVC_DCR_NALU_TYPE_SPS, const_cast<uint8_t*>(spsNal.data), static_cast<uint32_t>(spsNal.size)) != 0 ||
+        lsmash_append_hevc_dcr_nalu(param, HEVC_DCR_NALU_TYPE_PPS, const_cast<uint8_t*>(ppsNal.data), static_cast<uint32_t>(ppsNal.size)) != 0) {
         lsmash_destroy_codec_specific_data(cs);
         return false;
     }
@@ -182,14 +235,45 @@ bool Mp4Output::writeHeaders(const x265_nal* nals, uint32_t nalCount) {
     }
     lsmash_destroy_codec_specific_data(cs);
 
-    sampleEntry_ = lsmash_add_sample_entry(root_, track_, summary_);
-    if (!sampleEntry_) return false;
+    // Inject Dolby Vision configuration box (dvcC / dvvC) if enabled
+    if (config_.doviProfile > 0) {
+        uint8_t dv_profile = 8;
+        uint8_t compatibility_id = 1; // default HDR10 cross-compatibility
+        if (config_.doviProfile == 50 || config_.doviProfile == 5) {
+            dv_profile = 5;
+            compatibility_id = 0;
+        } else if (config_.doviProfile == 81 || config_.doviProfile == 8) {
+            dv_profile = 8;
+            compatibility_id = 1;
+        } else if (config_.doviProfile == 82) {
+            dv_profile = 8;
+            compatibility_id = 2;
+        } else if (config_.doviProfile == 84) {
+            dv_profile = 8;
+            compatibility_id = 4;
+        }
 
-    if (nalCount > 3) {
-        for (uint32_t i = 3; i < nalCount; ++i) {
-            seiBuffer_.insert(seiBuffer_.end(), nals[i].payload, nals[i].payload + nals[i].sizeBytes);
+        lsmash_codec_specific_t* dovi = lsmash_create_codec_specific_data(
+            LSMASH_CODEC_SPECIFIC_DATA_TYPE_ISOM_VIDEO_HEVC_DOVI,
+            LSMASH_CODEC_SPECIFIC_FORMAT_STRUCTURED
+        );
+        if (dovi) {
+            lsmash_dovi_set_config(
+                reinterpret_cast<lsmash_hevc_dovi_t*>(dovi->data.structured),
+                dv_profile,
+                compatibility_id,
+                mediaTimescale_,
+                static_cast<uint32_t>(timeInc_),
+                config_.width,
+                config_.height
+            );
+            lsmash_add_codec_specific_data(reinterpret_cast<lsmash_summary_t*>(summary_), dovi);
+            lsmash_destroy_codec_specific_data(dovi);
         }
     }
+
+    sampleEntry_ = lsmash_add_sample_entry(root_, track_, summary_);
+    if (!sampleEntry_) return false;
 
     return true;
 }
@@ -205,41 +289,29 @@ bool Mp4Output::writeFrame(const x265_nal* nals, uint32_t nalCount, const x265_p
         firstCts_ = static_cast<uint64_t>((pts + startOffset_) * timeInc_);
     }
 
-    // Collect valid NALs for ISO hvc1 sample (filter out in-band repeated VPS/SPS/PPS)
-    std::vector<const x265_nal*> validNals;
-    validNals.reserve(nalCount);
-    size_t samplePayloadSize = seiBuffer_.size();
-
-    for (uint32_t i = 0; i < nalCount; ++i) {
-        if (nals[i].sizeBytes >= 5) {
-            uint8_t nalType = (nals[i].payload[4] >> 1) & 0x3F;
-            if (nalType == 32 || nalType == 33 || nalType == 34) {
-                // Parameter sets are in hvcC box; skip in-band repeats for strict hvc1 compliance
-                continue;
-            }
-        }
-        validNals.push_back(&nals[i]);
-        samplePayloadSize += nals[i].sizeBytes;
-    }
-
-    if (samplePayloadSize == 0) {
-        return true;
-    }
-
-    lsmash_sample_t* sample = lsmash_create_sample(static_cast<uint32_t>(samplePayloadSize));
-    if (!sample) return false;
-
-    uint8_t* ptr = sample->data;
+    std::vector<uint8_t> samplePayload;
     if (!seiBuffer_.empty()) {
-        std::memcpy(ptr, seiBuffer_.data(), seiBuffer_.size());
-        ptr += seiBuffer_.size();
+        samplePayload.insert(samplePayload.end(), seiBuffer_.begin(), seiBuffer_.end());
         seiBuffer_.clear();
     }
 
-    for (const auto* nalPtr : validNals) {
-        std::memcpy(ptr, nalPtr->payload, nalPtr->sizeBytes);
-        ptr += nalPtr->sizeBytes;
+    for (uint32_t i = 0; i < nalCount; ++i) {
+        auto parsed = parseNal(nals[i]);
+        if (parsed.type == 32 || parsed.type == 33 || parsed.type == 34) {
+            // Parameter sets are in hvcC box; skip in-band repeats for strict hvc1 compliance
+            continue;
+        }
+        appendNalToSample(samplePayload, parsed);
     }
+
+    if (samplePayload.empty()) {
+        return true;
+    }
+
+    lsmash_sample_t* sample = lsmash_create_sample(static_cast<uint32_t>(samplePayload.size()));
+    if (!sample) return false;
+
+    std::memcpy(sample->data, samplePayload.data(), samplePayload.size());
 
     sample->dts = static_cast<uint64_t>((dts + startOffset_) * timeInc_);
     sample->cts = static_cast<uint64_t>((pts + startOffset_) * timeInc_);

@@ -17,6 +17,7 @@ struct OutputConfig {
     // Aspect ratio & HDR / Dolby Vision / Colorimetry metadata reservation
     int sarWidth{0};
     int sarHeight{0};
+    int doviProfile{0};
     std::string doviRpuPath;
     std::string hdr10plusPath;
     int colorPrimaries{-1};

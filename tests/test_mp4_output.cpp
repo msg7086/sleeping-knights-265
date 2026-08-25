@@ -106,3 +106,55 @@ TEST_CASE("Mp4Output initializes MP4 container, writes NALs and finishes cleanly
     // Clean up
     std::filesystem::remove(testPath);
 }
+
+TEST_CASE("Mp4Output supports Dolby Vision Profile 8.1 container injection", "[output][mp4][dovi]") {
+    std::string testPath = "test_dovi_output.mp4";
+    if (std::filesystem::exists(testPath)) {
+        std::filesystem::remove(testPath);
+    }
+
+    const x265_api* api = sk265::core::CoreRouter::getApi(10);
+    REQUIRE(api != nullptr);
+
+    auto param = sk265::core::make_param_handle(api);
+    api->param_default_preset(param.raw(), "ultrafast", nullptr);
+    param->sourceWidth = 1280;
+    param->sourceHeight = 720;
+    param->fpsNum = 25;
+    param->fpsDenom = 1;
+    param->internalBitDepth = 10;
+    param->internalCsp = X265_CSP_I420;
+    param->bAnnexB = false;
+    param->bRepeatHeaders = false;
+
+    auto encoder = sk265::core::make_encoder_handle(api, param.raw());
+    REQUIRE(encoder != nullptr);
+
+    sk265::pipeline::output::Mp4Output output;
+    sk265::pipeline::output::OutputConfig cfg;
+    cfg.outputPath = testPath;
+    cfg.width = 1280;
+    cfg.height = 720;
+    cfg.fpsNum = 25;
+    cfg.fpsDen = 1;
+    cfg.bitDepth = 10;
+    cfg.colorPrimaries = 9; // BT.2020
+    cfg.transferCharacteristics = 16; // SMPTE ST 2084 (PQ)
+    cfg.matrixCoeffs = 9;
+    cfg.doviProfile = 81; // Profile 8.1
+
+    REQUIRE(output.open(cfg));
+    REQUIRE(output.isOpen());
+
+    x265_nal* nals = nullptr;
+    uint32_t nalCount = 0;
+    int hBytes = api->encoder_headers(encoder.raw(), &nals, &nalCount);
+    REQUIRE(hBytes > 0);
+    REQUIRE(output.writeHeaders(nals, nalCount));
+
+    output.close(0, 0);
+    REQUIRE(std::filesystem::exists(testPath));
+    REQUIRE(std::filesystem::file_size(testPath) > 0);
+
+    std::filesystem::remove(testPath);
+}

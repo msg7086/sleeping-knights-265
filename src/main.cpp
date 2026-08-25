@@ -170,6 +170,7 @@ int main(int argc, char** argv) {
     outCfg.bitDepth = bitDepth;
     outCfg.sarWidth = param->vui.sarWidth;
     outCfg.sarHeight = param->vui.sarHeight;
+    outCfg.doviProfile = param->dolbyProfile;
     outCfg.colorPrimaries = param->vui.colorPrimaries;
     outCfg.transferCharacteristics = param->vui.transferCharacteristics;
     outCfg.matrixCoeffs = param->vui.matrixCoeffs;
