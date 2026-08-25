@@ -140,7 +140,8 @@ add_executable(sk265
     src/pipeline/input/lavf_input.cpp
     src/pipeline/output/raw_output.cpp
     src/pipeline/output/mp4_output.cpp
-    src/pipeline/output/mkv_output.cpp
+    src/pipeline/output/lavf_output.cpp
+    src/pipeline/output/output_factory.cpp
 )
 
 target_link_libraries(sk265 PRIVATE

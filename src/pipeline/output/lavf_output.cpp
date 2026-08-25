@@ -1,7 +1,8 @@
-#include "pipeline/output/mkv_output.h"
+#include "pipeline/output/lavf_output.h"
 #include <iostream>
 #include <cstring>
 #include <vector>
+#include <cctype>
 
 extern "C" {
 #include <libavformat/avformat.h>
@@ -11,7 +12,7 @@ extern "C" {
 
 namespace sk265::pipeline::output {
 
-struct MkvOutput::Impl {
+struct LavfOutput::Impl {
     AVFormatContext* formatCtx{nullptr};
     AVStream* videoStream{nullptr};
     OutputConfig config{};
@@ -28,7 +29,7 @@ struct MkvOutput::Impl {
             if (headerWritten && formatCtx->pb) {
                 av_write_trailer(formatCtx);
             }
-            if (formatCtx->pb) {
+            if (formatCtx->pb && !(formatCtx->oformat->flags & AVFMT_NOFILE)) {
                 avio_closep(&formatCtx->pb);
             }
             avformat_free_context(formatCtx);
@@ -40,19 +41,30 @@ struct MkvOutput::Impl {
     }
 };
 
-MkvOutput::MkvOutput() : impl_(std::make_unique<Impl>()) {}
-MkvOutput::~MkvOutput() = default;
+LavfOutput::LavfOutput() : impl_(std::make_unique<Impl>()) {}
+LavfOutput::~LavfOutput() = default;
 
-bool MkvOutput::isOpen() const noexcept {
+bool LavfOutput::isOpen() const noexcept {
     return impl_->formatCtx != nullptr;
 }
 
-bool MkvOutput::open(const OutputConfig& config) {
+bool LavfOutput::open(const OutputConfig& config) {
     if (config.outputPath.empty()) return false;
     impl_->cleanup();
     impl_->config = config;
 
-    int ret = avformat_alloc_output_context2(&impl_->formatCtx, nullptr, "matroska", config.outputPath.c_str());
+    const char* formatName = nullptr;
+    if (config.outputPath.size() >= 4) {
+        std::string lowerPath = config.outputPath;
+        for (char& c : lowerPath) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        if (lowerPath.ends_with(".mkv")) {
+            formatName = "matroska";
+        } else if (lowerPath.ends_with(".mp4")) {
+            formatName = "mp4";
+        }
+    }
+
+    int ret = avformat_alloc_output_context2(&impl_->formatCtx, nullptr, formatName, config.outputPath.c_str());
     if (ret < 0 || !impl_->formatCtx) {
         impl_->cleanup();
         return false;
@@ -97,10 +109,10 @@ bool MkvOutput::open(const OutputConfig& config) {
     return true;
 }
 
-bool MkvOutput::writeHeaders(const x265_nal* nals, uint32_t nalCount) {
+bool LavfOutput::writeHeaders(const x265_nal* nals, uint32_t nalCount) {
     if (!impl_->formatCtx || !impl_->videoStream || nalCount == 0) return false;
 
-    // Concatenate VPS, SPS, PPS extradata for HEVC in Matroska
+    // Concatenate VPS, SPS, PPS extradata for HEVC
     std::vector<uint8_t> extradata;
     for (uint32_t i = 0; i < nalCount; ++i) {
         extradata.insert(extradata.end(), nals[i].payload, nals[i].payload + nals[i].sizeBytes);
@@ -120,7 +132,7 @@ bool MkvOutput::writeHeaders(const x265_nal* nals, uint32_t nalCount) {
     return true;
 }
 
-bool MkvOutput::writeFrame(const x265_nal* nals, uint32_t nalCount, const x265_picture& pic) {
+bool LavfOutput::writeFrame(const x265_nal* nals, uint32_t nalCount, const x265_picture& pic) {
     if (!impl_->formatCtx || !impl_->headerWritten || nalCount == 0) return false;
 
     size_t totalBytes = 0;
@@ -163,7 +175,7 @@ bool MkvOutput::writeFrame(const x265_nal* nals, uint32_t nalCount, const x265_p
     return ret >= 0;
 }
 
-void MkvOutput::close(int64_t /*largestPts*/, int64_t /*secondLargestPts*/) {
+void LavfOutput::close(int64_t /*largestPts*/, int64_t /*secondLargestPts*/) {
     impl_->cleanup();
 }
 

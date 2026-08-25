@@ -11,9 +11,7 @@
 #include "pipeline/input/avisynth_input.h"
 #include "pipeline/input/vapoursynth_input.h"
 #include "pipeline/input/lavf_input.h"
-#include "pipeline/output/raw_output.h"
-#include "pipeline/output/mp4_output.h"
-#include "pipeline/output/mkv_output.h"
+#include "pipeline/output/output_factory.h"
 #include "pipeline/bounded_queue.h"
 #include "utils/progress.h"
 #include "utils/signal_handler.h"
@@ -117,13 +115,15 @@ int main(int argc, char** argv) {
     param->sourceBitDepth = info.bitDepth;
     param->internalCsp = info.colorSpace;
 
-    bool isMp4Output = hasExt(opts.outputPath, ".mp4");
-    bool isMkvOutput = hasExt(opts.outputPath, ".mkv");
-
-    if (isMp4Output) {
-        param->bAnnexB = false;
-        param->bRepeatHeaders = false;
+    auto muxerResult = sk265::pipeline::output::OutputFactory::create(opts.muxer, opts.outputPath);
+    if (!muxerResult.has_value()) {
+        std::cerr << "sk265[error]: " << muxerResult.error() << "\n";
+        return 1;
     }
+
+    auto muxerInstance = std::move(muxerResult.value());
+    param->bAnnexB = muxerInstance.bAnnexB;
+    param->bRepeatHeaders = muxerInstance.bRepeatHeaders;
 
     // Forward pass-through parameters directly to x265_param_parse
     for (const auto& [name, value] : opts.encoderParams) {
@@ -143,14 +143,7 @@ int main(int argc, char** argv) {
     }
 
     // 5. Open output destination
-    std::unique_ptr<sk265::pipeline::output::IOutput> output;
-    if (isMp4Output) {
-        output = std::make_unique<sk265::pipeline::output::Mp4Output>();
-    } else if (isMkvOutput) {
-        output = std::make_unique<sk265::pipeline::output::MkvOutput>();
-    } else {
-        output = std::make_unique<sk265::pipeline::output::RawOutput>();
-    }
+    auto output = std::move(muxerInstance.output);
 
     sk265::pipeline::output::OutputConfig outCfg;
     outCfg.outputPath = opts.outputPath;

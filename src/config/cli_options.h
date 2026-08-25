@@ -91,6 +91,7 @@ struct CliOptions {
     std::string qpfilePath;
     std::string avsLibPath;
     std::string vpyLibPath;
+    std::string muxer{"auto"}; // "auto", "lsmash", "lavf", "raw"
     QueueSizeConfig queueConfig;
 
     // Standardized encoder parameters for pass-through to x265_param_parse

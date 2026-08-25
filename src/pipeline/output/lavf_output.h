@@ -6,10 +6,10 @@
 
 namespace sk265::pipeline::output {
 
-class MkvOutput : public IOutput {
+class LavfOutput : public IOutput {
 public:
-    MkvOutput();
-    ~MkvOutput() override;
+    LavfOutput();
+    ~LavfOutput() override;
 
     bool open(const OutputConfig& config) override;
     bool writeHeaders(const x265_nal* nals, uint32_t nalCount) override;

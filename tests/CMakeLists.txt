@@ -10,7 +10,8 @@ add_executable(sk265_tests
     test_lavf_input.cpp
     test_raw_output.cpp
     test_mp4_output.cpp
-    test_mkv_output.cpp
+    test_lavf_output.cpp
+    test_output_factory.cpp
     test_golden_cross_validation.cpp
     test_progress.cpp
     test_signal_and_pipe.cpp
@@ -25,7 +26,8 @@ add_executable(sk265_tests
     ../src/pipeline/input/lavf_input.cpp
     ../src/pipeline/output/raw_output.cpp
     ../src/pipeline/output/mp4_output.cpp
-    ../src/pipeline/output/mkv_output.cpp
+    ../src/pipeline/output/lavf_output.cpp
+    ../src/pipeline/output/output_factory.cpp
 )
 
 target_link_libraries(sk265_tests PRIVATE

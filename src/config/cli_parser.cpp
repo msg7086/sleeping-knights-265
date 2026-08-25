@@ -49,6 +49,8 @@ CliOptions CliParser::parse(const std::vector<std::string>& args) {
             opts.avsLibPath = getNext(i);
         } else if (arg == "--vpy-lib") {
             opts.vpyLibPath = getNext(i);
+        } else if (arg == "--muxer") {
+            opts.muxer = getNext(i);
         } else if (arg == "--queue-size") {
             opts.queueConfig = QueueSizeConfig::parse(getNext(i));
         } else if (arg == "--dolby-vision-rpu") {
