@@ -136,6 +136,14 @@ int main(int argc, char** argv) {
     // Forward pass-through parameters directly to x265_param_parse
     for (const auto& [name, value] : opts.encoderParams) {
         if (name == "preset" || name == "tune") continue;
+        if (name == "opts" || name == "level-of-options") {
+            if (value == "0") {
+                api->param_parse(param.raw(), "info", "false");
+            } else {
+                api->param_parse(param.raw(), "info", "true");
+            }
+            continue;
+        }
         int ret = api->param_parse(param.raw(), name.c_str(), value.c_str());
         if (ret != 0) {
             std::cerr << "sk265[error]: x265_param_parse failed for --" << name << " " << value << " (code: " << ret << ")\n";

@@ -296,6 +296,37 @@ TEST_CASE("Golden Zones, Scenecut-Aware QP, Negative Offsets and Multi-pass vali
     REQUIRE(param->scaleFactor == 2);
 }
 
+TEST_CASE("Golden SEI options control and parameter validation", "[golden][sei]") {
+    std::vector<std::string> args = {
+        "sk265",
+        "-i", "input.y4m",
+        "-o", "output.hevc",
+        "--opts", "0",
+        "--no-info"
+    };
+
+    auto opts = sk265::config::CliParser::parse(args);
+    REQUIRE(opts.encoderParams["opts"] == "0");
+    REQUIRE(opts.encoderParams["no-info"] == "true");
+
+    const x265_api* api = sk265::core::CoreRouter::getApi(8);
+    REQUIRE(api != nullptr);
+
+    auto param = sk265::core::make_param_handle(api);
+    REQUIRE(api->param_default_preset(param.raw(), "medium", nullptr) == 0);
+
+    for (const auto& [k, v] : opts.encoderParams) {
+        if (k == "opts" || k == "level-of-options") {
+            if (v == "0") api->param_parse(param.raw(), "info", "false");
+            else api->param_parse(param.raw(), "info", "true");
+            continue;
+        }
+        int ret = api->param_parse(param.raw(), k.c_str(), v.c_str());
+        REQUIRE(ret == 0);
+    }
+    REQUIRE(param->bEmitInfoSEI == 0);
+}
+
 TEST_CASE("Golden invalid parameter error detection", "[golden][errors]") {
     const x265_api* api = sk265::core::CoreRouter::getApi(8);
     REQUIRE(api != nullptr);
