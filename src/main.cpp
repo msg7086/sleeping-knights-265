@@ -5,6 +5,7 @@
 #include <cstring>
 #include "core/x265_handle.h"
 #include "core/x265_router.h"
+#include "core/tuning_preset.h"
 #include "config/cli_parser.h"
 #include "config/cascading_config.h"
 #include "pipeline/input/y4m_input.h"
@@ -102,9 +103,16 @@ int main(int argc, char** argv) {
 
     std::string preset = opts.encoderParams.count("preset") ? opts.encoderParams["preset"] : "medium";
     std::string tune = opts.encoderParams.count("tune") ? opts.encoderParams["tune"] : "";
-    if (api->param_default_preset(param.raw(), preset.c_str(), tune.empty() ? nullptr : tune.c_str()) != 0) {
+    bool isCustomTune = sk265::core::TuningPreset::isCustomTune(tune);
+    const char* x265Tune = isCustomTune ? nullptr : (tune.empty() ? nullptr : tune.c_str());
+
+    if (api->param_default_preset(param.raw(), preset.c_str(), x265Tune) != 0) {
         std::cerr << "sk265[error]: Invalid preset (" << preset << ") or tune (" << tune << ")\n";
         return 1;
+    }
+
+    if (isCustomTune) {
+        sk265::core::TuningPreset::apply(param.raw(), tune);
     }
 
     param->sourceWidth = info.width;

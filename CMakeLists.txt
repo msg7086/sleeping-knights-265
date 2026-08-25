@@ -131,6 +131,7 @@ endif()
 add_executable(sk265
     src/main.cpp
     src/core/x265_router.cpp
+    src/core/tuning_preset.cpp
     src/config/cli_parser.cpp
     src/config/config_file_parser.cpp
     src/config/cascading_config.cpp

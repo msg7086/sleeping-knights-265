@@ -1,6 +1,7 @@
 add_executable(sk265_tests
     test_main.cpp
     test_core_router.cpp
+    test_tuning_preset.cpp
     test_cli_parser.cpp
     test_config_file_parser.cpp
     test_cascading_config.cpp
@@ -17,6 +18,7 @@ add_executable(sk265_tests
     test_signal_and_pipe.cpp
     test_bounded_queue.cpp
     ../src/core/x265_router.cpp
+    ../src/core/tuning_preset.cpp
     ../src/config/cli_parser.cpp
     ../src/config/config_file_parser.cpp
     ../src/config/cascading_config.cpp
