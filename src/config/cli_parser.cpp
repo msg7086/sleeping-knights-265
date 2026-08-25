@@ -45,6 +45,8 @@ CliOptions CliParser::parse(const std::vector<std::string>& args) {
         } else if (arg == "--seek") {
             std::string val = getNext(i);
             if (!val.empty()) opts.seekFrame = std::stoi(val);
+        } else if (arg == "--avs-lib") {
+            opts.avsLibPath = getNext(i);
         } else if (arg == "--queue-size") {
             opts.queueConfig = QueueSizeConfig::parse(getNext(i));
         } else if (arg == "--dolby-vision-rpu") {

@@ -48,7 +48,7 @@ bool Y4mInput::parseHeader(std::istream& stream) {
     info_.fpsNum = 25;
     info_.fpsDen = 1;
     info_.bitDepth = 8;
-    info_.colorSpace = 0;
+    info_.colorSpace = 1; // Default: I420
 
     std::string token;
     while (stream >> token) {
@@ -67,10 +67,34 @@ bool Y4mInput::parseHeader(std::istream& stream) {
         } else if (tag == 'C') {
             if (val.find("420p10") != std::string::npos) {
                 info_.bitDepth = 10;
+                info_.colorSpace = 1;
             } else if (val.find("420p12") != std::string::npos) {
                 info_.bitDepth = 12;
+                info_.colorSpace = 1;
+            } else if (val.find("422p10") != std::string::npos) {
+                info_.bitDepth = 10;
+                info_.colorSpace = 2;
+            } else if (val.find("422p12") != std::string::npos) {
+                info_.bitDepth = 12;
+                info_.colorSpace = 2;
+            } else if (val.find("422") != std::string::npos) {
+                info_.bitDepth = 8;
+                info_.colorSpace = 2;
+            } else if (val.find("444p10") != std::string::npos) {
+                info_.bitDepth = 10;
+                info_.colorSpace = 3;
+            } else if (val.find("444p12") != std::string::npos) {
+                info_.bitDepth = 12;
+                info_.colorSpace = 3;
+            } else if (val.find("444") != std::string::npos) {
+                info_.bitDepth = 8;
+                info_.colorSpace = 3;
+            } else if (val.find("mono") != std::string::npos) {
+                info_.bitDepth = 8;
+                info_.colorSpace = 0;
             } else {
                 info_.bitDepth = 8;
+                info_.colorSpace = 1;
             }
         }
         if (stream.peek() == '\n') {

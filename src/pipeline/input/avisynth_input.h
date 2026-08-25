@@ -38,6 +38,9 @@ public:
     AviSynthInput();
     ~AviSynthInput() override;
 
+    void setCustomLibraryPath(const std::string& customLibPath) { customLibPath_ = customLibPath; }
+    void setSeekFrame(int64_t seekFrame) { seekFrame_ = seekFrame; }
+
     bool open(const std::string& path) override;
     InputInfo getInfo() const override { return info_; }
     std::optional<VideoFrame> readFrame() override;
@@ -50,7 +53,9 @@ private:
     InputInfo info_{};
     bool eof_{false};
     int64_t currentFrameIndex_{0};
+    int64_t seekFrame_{0};
     int planeCount_{3};
+    std::string customLibPath_;
 
     void* libHandle_{nullptr};
     AvsFuncTable func_{};

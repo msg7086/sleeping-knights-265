@@ -42,7 +42,14 @@ int main(int argc, char** argv) {
     // 1. Select and open input source
     std::unique_ptr<sk265::pipeline::input::IInput> input;
     if (opts.inputPath.size() > 4 && opts.inputPath.substr(opts.inputPath.size() - 4) == ".avs") {
-        input = std::make_unique<sk265::pipeline::input::AviSynthInput>();
+        auto avs = std::make_unique<sk265::pipeline::input::AviSynthInput>();
+        if (!opts.avsLibPath.empty()) {
+            avs->setCustomLibraryPath(opts.avsLibPath);
+        }
+        if (opts.seekFrame > 0) {
+            avs->setSeekFrame(opts.seekFrame);
+        }
+        input = std::move(avs);
     } else {
         input = std::make_unique<sk265::pipeline::input::Y4mInput>();
     }
@@ -82,7 +89,7 @@ int main(int argc, char** argv) {
     param->fpsDenom = info.fpsDen;
     param->internalBitDepth = bitDepth;
     param->sourceBitDepth = info.bitDepth;
-    param->internalCsp = X265_CSP_I420;
+    param->internalCsp = info.colorSpace;
 
     // Forward pass-through parameters directly to x265_param_parse
     for (const auto& [name, value] : opts.encoderParams) {

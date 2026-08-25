@@ -50,6 +50,12 @@ inline AVS_Value avs_new_value_string(const char* s) {
     v.d.s = s;
     return v;
 }
+inline AVS_Value avs_new_value_bool(bool b) {
+    AVS_Value v{};
+    v.type = 'b';
+    v.d.b = b ? 1 : 0;
+    return v;
+}
 inline AVS_Value avs_new_value_array(const AVS_Value* a, int size) {
     AVS_Value v{};
     v.type = 'a';

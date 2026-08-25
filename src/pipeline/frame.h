@@ -13,14 +13,14 @@ struct VideoFrame {
     int width{0};
     int height{0};
     int bitDepth{8};
-    int colorSpace{0}; // 0 = YUV420
+    int colorSpace{1}; // 0 = I400, 1 = I420, 2 = I422, 3 = I444
 
     std::array<std::span<const uint8_t>, 3> planes{};
     std::array<size_t, 3> strides{0, 0, 0};
     std::vector<uint8_t> buffer;
     std::any handle;
 
-    void allocate(int w, int h, int depth, int cs = 0) {
+    void allocate(int w, int h, int depth, int cs = 1) {
         width = w;
         height = h;
         bitDepth = depth;
@@ -28,8 +28,19 @@ struct VideoFrame {
         int bytesPerSample = (depth > 8) ? 2 : 1;
 
         size_t ySize = static_cast<size_t>(w) * h * bytesPerSample;
-        size_t uvWidth = (cs == 0 || cs == 1) ? (w / 2) : w;
-        size_t uvHeight = (cs == 0) ? (h / 2) : h;
+        size_t uvWidth = 0;
+        size_t uvHeight = 0;
+        if (cs == 1) { // I420
+            uvWidth = w / 2;
+            uvHeight = h / 2;
+        } else if (cs == 2) { // I422
+            uvWidth = w / 2;
+            uvHeight = h;
+        } else if (cs == 3) { // I444
+            uvWidth = w;
+            uvHeight = h;
+        }
+
         size_t uvSize = uvWidth * uvHeight * bytesPerSample;
 
         buffer.resize(ySize + 2 * uvSize);
@@ -39,8 +50,13 @@ struct VideoFrame {
 
         uint8_t* ptr = buffer.data();
         planes[0] = std::span<const uint8_t>(ptr, ySize);
-        planes[1] = std::span<const uint8_t>(ptr + ySize, uvSize);
-        planes[2] = std::span<const uint8_t>(ptr + ySize + uvSize, uvSize);
+        if (uvSize > 0) {
+            planes[1] = std::span<const uint8_t>(ptr + ySize, uvSize);
+            planes[2] = std::span<const uint8_t>(ptr + ySize + uvSize, uvSize);
+        } else {
+            planes[1] = std::span<const uint8_t>();
+            planes[2] = std::span<const uint8_t>();
+        }
     }
 };
 

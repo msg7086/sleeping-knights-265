@@ -53,6 +53,19 @@ TEST_CASE("CliParser handles repeated parameters and later ones overwrite earlie
     REQUIRE(opts.encoderParams["aq-mode"] == "3");
 }
 
+TEST_CASE("CliParser parses --avs-lib option cleanly", "[config]") {
+    std::vector<std::string> args = {
+        "sk265",
+        "-i", "test.avs",
+        "-o", "out.hevc",
+        "--avs-lib", "C:/AviSynthPlus/AviSynth.dll"
+    };
+
+    auto opts = sk265::config::CliParser::parse(args);
+    REQUIRE(opts.inputPath == "test.avs");
+    REQUIRE(opts.avsLibPath == "C:/AviSynthPlus/AviSynth.dll");
+}
+
 TEST_CASE("CliParser supports key=value syntax", "[config]") {
     std::vector<std::string> args = {
         "sk265",

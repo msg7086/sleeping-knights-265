@@ -10,7 +10,7 @@ struct InputInfo {
     int width{0};
     int height{0};
     int bitDepth{8};
-    int colorSpace{0};
+    int colorSpace{1}; // 0 = I400, 1 = I420, 2 = I422, 3 = I444
     int fpsNum{25};
     int fpsDen{1};
     int64_t totalFrames{0};
