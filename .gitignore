@@ -1,6 +1,6 @@
 build/
-.build_x265/
-.build_ffmpeg/
+.deps/
+dist/
 tmp/
 .vs/
 .vscode/

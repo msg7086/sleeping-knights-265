@@ -34,9 +34,9 @@ add_executable(sk265_tests
 
 target_link_libraries(sk265_tests PRIVATE
     Catch2::Catch2WithMain
-    x265_8bit
     x265_10bit
     x265_12bit
+    x265_8bit
     lsmash
     avformat
     avcodec
@@ -47,11 +47,11 @@ target_link_libraries(sk265_tests PRIVATE
 if(WIN32)
     target_link_libraries(sk265_tests PRIVATE ws2_32 bcrypt secur32 strmiids mfplat mfuuid ole32 winpthread)
 else()
-    find_package(Numa QUIET)
-    if(NUMA_FOUND)
+    find_library(NUMA_LIBRARY numa)
+    if(NUMA_LIBRARY)
         target_link_libraries(sk265_tests PRIVATE ${NUMA_LIBRARY})
     endif()
-    target_link_libraries(sk265_tests PRIVATE ${CMAKE_DL_LIBS} pthread)
+    target_link_libraries(sk265_tests PRIVATE ${CMAKE_DL_LIBS} pthread m)
 endif()
 
 include(CTest)

@@ -1,0 +1,14 @@
+Source: sk265
+Section: video
+Priority: optional
+Maintainer: sk265 Maintainer <i@7086.in>
+Build-Depends: debhelper-compat (= 13), cmake (>= 3.20), ninja-build, nasm, pkg-config, libnuma-dev
+Standards-Version: 4.6.2
+Homepage: https://github.com/user/sleeping-knights-265
+
+Package: sk265
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Modern high-performance standalone CLI frontend for x265
+ A modular, multi-depth C++20 CLI frontend for x265 with high-throughput
+ asynchronous input/output pipelines and advanced encoding features.

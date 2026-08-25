@@ -12,8 +12,11 @@ else()
 endif()
 
 # Persistent backend build directory (protected from clean/rm -rf build/)
-set(SK265_BACKEND_CACHE_DIR "${CMAKE_SOURCE_DIR}/.build_x265" CACHE PATH "Directory for cached x265 multi-depth libraries")
-set(SK265_FFMPEG_CACHE_DIR "${CMAKE_SOURCE_DIR}/.build_ffmpeg" CACHE PATH "Directory for cached FFmpeg static libraries")
+set(SK265_BACKEND_CACHE_DIR "${CMAKE_SOURCE_DIR}/.deps/x265" CACHE PATH "Directory for cached x265 multi-depth libraries")
+set(SK265_FFMPEG_CACHE_DIR "${CMAKE_SOURCE_DIR}/.deps/ffmpeg" CACHE PATH "Directory for cached FFmpeg static libraries")
+
+include(cmake/x265_backend.cmake)
+include(cmake/ffmpeg_backend.cmake)
 
 include(FetchContent)
 
@@ -128,43 +131,7 @@ if(NOT MSVC)
     target_compile_options(lsmash PRIVATE -w)
 endif()
 
-add_executable(sk265
-    src/main.cpp
-    src/core/x265_router.cpp
-    src/core/tuning_preset.cpp
-    src/config/cli_parser.cpp
-    src/config/config_file_parser.cpp
-    src/config/cascading_config.cpp
-    src/pipeline/input/y4m_input.cpp
-    src/pipeline/input/avisynth_input.cpp
-    src/pipeline/input/vapoursynth_input.cpp
-    src/pipeline/input/lavf_input.cpp
-    src/pipeline/output/raw_output.cpp
-    src/pipeline/output/mp4_output.cpp
-    src/pipeline/output/lavf_output.cpp
-    src/pipeline/output/output_factory.cpp
-)
-
-target_link_libraries(sk265 PRIVATE
-    x265_8bit
-    x265_10bit
-    x265_12bit
-    lsmash
-    avformat
-    avcodec
-    swscale
-    swresample
-    avutil
-)
-if(WIN32)
-    target_link_libraries(sk265 PRIVATE ws2_32 bcrypt secur32 strmiids mfplat mfuuid ole32 winpthread)
-else()
-    find_package(Numa QUIET)
-    if(NUMA_FOUND)
-        target_link_libraries(sk265 PRIVATE ${NUMA_LIBRARY})
-    endif()
-    target_link_libraries(sk265 PRIVATE ${CMAKE_DL_LIBS} pthread)
-endif()
+add_subdirectory(src sk265)
 
 enable_testing()
 add_subdirectory(tests)

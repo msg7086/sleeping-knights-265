@@ -1,0 +1,55 @@
+name: Build Debian Package
+
+on:
+  push:
+    branches: [ master ]
+    tags: [ 'v*' ]
+
+jobs:
+  build-deb:
+    runs-on: ubuntu-26.04
+    container:
+      image: buildpack-deps:trixie
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Configure Git safe directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Install build tools
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends build-essential cmake ninja-build nasm debhelper pkg-config libnuma-dev
+
+      - name: Get Submodule SHAs
+        id: submodules
+        run: |
+          echo "x265_sha=$(git rev-parse HEAD:third_party/x265)" >> $GITHUB_OUTPUT
+          echo "ffmpeg_sha=$(git rev-parse HEAD:third_party/ffmpeg)" >> $GITHUB_OUTPUT
+
+      - name: Cache x265 backend
+        uses: actions/cache@v6
+        with:
+          path: .deps/x265
+          key: sk265-x265-trixie-${{ steps.submodules.outputs.x265_sha }}-${{ hashFiles('scripts/build_x265*') }}
+
+      - name: Cache FFmpeg backend
+        uses: actions/cache@v6
+        with:
+          path: .deps/ffmpeg
+          key: sk265-ffmpeg-trixie-${{ steps.submodules.outputs.ffmpeg_sha }}-${{ hashFiles('scripts/build_ffmpeg*') }}
+
+      - name: Build Debian package
+        run: |
+          dpkg-buildpackage -b -uc -us
+          mkdir -p dist
+          cp ../sk265_*.deb dist/
+
+      - name: Upload Debian Package Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: sk265-deb-trixie
+          path: dist/*.deb

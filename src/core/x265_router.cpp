@@ -3,8 +3,79 @@
 #include "core/x265_api.h"
 
 namespace x265_8bit  { const x265_api* x265_api_get(int); }
-namespace x265_10bit { const x265_api* x265_api_get(int); }
+namespace x265_10bit {
+const x265_api* x265_api_get(int);
+void x265_alloc_analysis_data(x265_param* param, x265_analysis_data* analysis);
+void x265_free_analysis_data(x265_param* param, x265_analysis_data* analysis);
+x265_picture* x265_picture_alloc();
+void x265_picture_init(x265_param* param, x265_picture* pic);
+void x265_picture_free(x265_picture* pic);
+int x265_encoder_reconfig(x265_encoder* encoder, x265_param* param);
+int x265_param_parse(x265_param* p, const char* name, const char* value);
+x265_zone* x265_zone_alloc(int zoneCount, int isZoneFile);
+void x265_zone_free(x265_param* param);
+FILE* x265_csvlog_open(const x265_param* param);
+void x265_csvlog_frame(const x265_param* param, const x265_picture* pic);
+void x265_csvlog_encode(const x265_param* param, const x265_stats* stats, int padx, int pady, int argc, char** argv);
+void x265_dither_image(x265_picture* pic, int picWidth, int picHeight, int16_t* errorBuf, int bitDepth);
+}
 namespace x265_12bit { const x265_api* x265_api_get(int); }
+
+extern "C" {
+
+void x265_alloc_analysis_data(x265_param* param, x265_analysis_data* analysis) {
+    x265_10bit::x265_alloc_analysis_data(param, analysis);
+}
+
+void x265_free_analysis_data(x265_param* param, x265_analysis_data* analysis) {
+    x265_10bit::x265_free_analysis_data(param, analysis);
+}
+
+x265_picture* x265_picture_alloc() {
+    return x265_10bit::x265_picture_alloc();
+}
+
+void x265_picture_init(x265_param* param, x265_picture* pic) {
+    x265_10bit::x265_picture_init(param, pic);
+}
+
+void x265_picture_free(x265_picture* pic) {
+    x265_10bit::x265_picture_free(pic);
+}
+
+int x265_encoder_reconfig(x265_encoder* encoder, x265_param* param) {
+    return x265_10bit::x265_encoder_reconfig(encoder, param);
+}
+
+int x265_param_parse(x265_param* p, const char* name, const char* value) {
+    return x265_10bit::x265_param_parse(p, name, value);
+}
+
+x265_zone* x265_zone_alloc(int zoneCount, int isZoneFile) {
+    return x265_10bit::x265_zone_alloc(zoneCount, isZoneFile);
+}
+
+void x265_zone_free(x265_param* param) {
+    x265_10bit::x265_zone_free(param);
+}
+
+FILE* x265_csvlog_open(const x265_param* param) {
+    return x265_10bit::x265_csvlog_open(param);
+}
+
+void x265_csvlog_frame(const x265_param* param, const x265_picture* pic) {
+    x265_10bit::x265_csvlog_frame(param, pic);
+}
+
+void x265_csvlog_encode(const x265_param* param, const x265_stats* stats, int padx, int pady, int argc, char** argv) {
+    x265_10bit::x265_csvlog_encode(param, stats, padx, pady, argc, argv);
+}
+
+void x265_dither_image(x265_picture* pic, int picWidth, int picHeight, int16_t* errorBuf, int bitDepth) {
+    x265_10bit::x265_dither_image(pic, picWidth, picHeight, errorBuf, bitDepth);
+}
+
+} // extern "C"
 
 namespace sk265::core {
 
