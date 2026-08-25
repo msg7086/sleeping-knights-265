@@ -80,7 +80,7 @@ struct QueueSizeConfig {
 struct CliOptions {
     std::string inputPath;
     std::string outputPath;
-    int bitDepth{8};
+    int bitDepth{10};
     int frameCount{0};
     int seekFrame{0};
     bool showHelp{false};

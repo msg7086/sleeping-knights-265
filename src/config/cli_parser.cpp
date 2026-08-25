@@ -135,7 +135,7 @@ void CliParser::printHelp() {
               << "Frontend Options:\n"
               << "  -i, --input <file>        Input Y4M video stream or AviSynth+ script (.avs)\n"
               << "  -o, --output <file>       Output Annex-B HEVC bitstream\n"
-              << "  -D, --output-depth <int>  Encoding bit depth (8, 10, 12) [default: 8]\n"
+              << "  -D, --output-depth <int>  Encoding bit depth (8, 10, 12) [default: 10]\n"
               << "  -f, --frames <int>        Max frames to encode [default: all]\n"
               << "      --seek <int>          First frame to encode [default: 0]\n"
               << "  -h, --help                Show this help message\n"
