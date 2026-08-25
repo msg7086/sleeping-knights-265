@@ -9,12 +9,21 @@ TEST_CASE("ConsoleProgress formats ETA correctly", "[utils][progress]") {
 }
 
 TEST_CASE("ConsoleProgress stylish mode format and lifecycle", "[utils][progress]") {
-    sk265::utils::ConsoleProgress stylishProgress(200, 25, 1, true, true);
+    sk265::utils::ConsoleProgress stylishProgress(200, 25, 1, true, true, false);
     REQUIRE(stylishProgress.isStylish());
 
     // Should update in stylish mode without error
     stylishProgress.update(50, 1048576, true);
-    stylishProgress.finish(50);
+    stylishProgress.finish(50, 1048576);
+}
+
+TEST_CASE("ConsoleProgress jsonl mode format and lifecycle", "[utils][progress]") {
+    sk265::utils::ConsoleProgress jsonlProgress(200, 25, 1, true, false, true);
+    REQUIRE(jsonlProgress.isJsonl());
+
+    // Should update in jsonl mode without error
+    jsonlProgress.update(50, 1048576, true);
+    jsonlProgress.finish(50, 1048576);
 }
 
 TEST_CASE("ConsoleProgress updates and finishes cleanly", "[utils][progress]") {

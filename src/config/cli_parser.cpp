@@ -34,6 +34,8 @@ CliOptions CliParser::parse(const std::vector<std::string>& args) {
             opts.bProgress = true;
         } else if (arg == "--stylish") {
             opts.bStylish = true;
+        } else if (arg == "--jsonl") {
+            opts.bJsonl = true;
         } else if (arg == "-i" || arg == "--input") {
             opts.inputPath = getNext(i);
         } else if (arg == "-o" || arg == "--output") {

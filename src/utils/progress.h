@@ -16,8 +16,8 @@ namespace sk265::utils {
 
 class ConsoleProgress {
 public:
-    ConsoleProgress(int64_t totalFrames = 0, int fpsNum = 25, int fpsDen = 1, bool enabled = true, bool stylish = false)
-        : totalFrames_(totalFrames), fpsNum_(fpsNum > 0 ? fpsNum : 25), fpsDen_(fpsDen > 0 ? fpsDen : 1), enabled_(enabled), stylish_(stylish) {
+    ConsoleProgress(int64_t totalFrames = 0, int fpsNum = 25, int fpsDen = 1, bool enabled = true, bool stylish = false, bool jsonl = false)
+        : totalFrames_(totalFrames), fpsNum_(fpsNum > 0 ? fpsNum : 25), fpsDen_(fpsDen > 0 ? fpsDen : 1), enabled_(enabled), stylish_(stylish), jsonl_(jsonl) {
         startTime_ = std::chrono::steady_clock::now();
         lastUpdateTime_ = startTime_;
     }
@@ -25,10 +25,12 @@ public:
     void setEnabled(bool enabled) noexcept { enabled_ = enabled; }
     void setStylish(bool stylish) noexcept { stylish_ = stylish; }
     bool isStylish() const noexcept { return stylish_; }
+    void setJsonl(bool jsonl) noexcept { jsonl_ = jsonl; }
+    bool isJsonl() const noexcept { return jsonl_; }
     void setTotalFrames(int64_t totalFrames) noexcept { totalFrames_ = totalFrames; }
 
     void printHeader() {
-        if (!enabled_ || !stylish_ || headerPrinted_) return;
+        if (!enabled_ || jsonl_ || !stylish_ || headerPrinted_) return;
         headerPrinted_ = true;
         if (totalFrames_ > 0) {
             std::cerr << "         frames        fps    kb/s      elapsed    remain       size   est.size\n";
@@ -41,7 +43,7 @@ public:
     void update(int64_t frameNum, uint64_t totalBytes, bool force = false) {
         if (!enabled_ || frameNum <= 0) return;
 
-        if (stylish_ && !headerPrinted_) {
+        if (stylish_ && !headerPrinted_ && !jsonl_) {
             printHeader();
         }
 
@@ -56,6 +58,18 @@ public:
         double elapsedSec = totalElapsedMs > 0 ? (totalElapsedMs / 1000.0) : 0.001;
         double fps = frameNum / elapsedSec;
         double bitrateKbps = (totalBytes * 8.0 / 1000.0) / (frameNum * (static_cast<double>(fpsDen_) / fpsNum_));
+
+        if (jsonl_) {
+            char jsonBuf[320];
+            snprintf(jsonBuf, sizeof(jsonBuf),
+                     "{\"frame\":%lld,\"total_frames\":%lld,\"bytes\":%llu,\"elapsed_ms\":%lld,\"fps\":%.2f,\"bitrate\":%.2f}",
+                     static_cast<long long>(frameNum), static_cast<long long>(totalFrames_),
+                     static_cast<unsigned long long>(totalBytes), static_cast<long long>(totalElapsedMs),
+                     fps, bitrateKbps);
+            std::cerr << jsonBuf << "\n";
+            std::cerr.flush();
+            return;
+        }
 
         int elapsedTotalSec = static_cast<int>(elapsedSec);
         int elH = elapsedTotalSec / 3600;
@@ -134,6 +148,21 @@ public:
 
     void finish(int64_t frameNum = 0, uint64_t totalBytes = 0) {
         if (!enabled_) return;
+        if (jsonl_) {
+            auto totalElapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime_).count();
+            double elapsedSec = totalElapsedMs > 0 ? (totalElapsedMs / 1000.0) : 0.001;
+            double avgFps = frameNum / elapsedSec;
+            char jsonBuf[320];
+            snprintf(jsonBuf, sizeof(jsonBuf),
+                     "{\"frame\":%lld,\"total_frames\":%lld,\"bytes\":%llu,\"elapsed_ms\":%lld,\"fps\":%.2f,\"status\":\"completed\"}",
+                     static_cast<long long>(frameNum), static_cast<long long>(totalFrames_),
+                     static_cast<unsigned long long>(totalBytes), static_cast<long long>(totalElapsedMs),
+                     avgFps);
+            std::cerr << jsonBuf << "\n";
+            std::cerr.flush();
+            return;
+        }
+
         if (stylish_) {
             if (frameNum > 0) {
                 update(frameNum, totalBytes, true);
@@ -163,6 +192,7 @@ private:
     int fpsDen_{1};
     bool enabled_{true};
     bool stylish_{false};
+    bool jsonl_{false};
     bool headerPrinted_{false};
     std::chrono::steady_clock::time_point startTime_;
     std::chrono::steady_clock::time_point lastUpdateTime_;
