@@ -2,6 +2,8 @@ add_executable(sk265_tests
     test_main.cpp
     test_core_router.cpp
     test_cli_parser.cpp
+    test_config_file_parser.cpp
+    test_cascading_config.cpp
     test_y4m_input.cpp
     test_avisynth_input.cpp
     test_vapoursynth_input.cpp
@@ -13,6 +15,8 @@ add_executable(sk265_tests
     test_bounded_queue.cpp
     ../src/core/x265_router.cpp
     ../src/config/cli_parser.cpp
+    ../src/config/config_file_parser.cpp
+    ../src/config/cascading_config.cpp
     ../src/pipeline/input/y4m_input.cpp
     ../src/pipeline/input/avisynth_input.cpp
     ../src/pipeline/input/vapoursynth_input.cpp

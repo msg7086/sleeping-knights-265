@@ -114,6 +114,8 @@ add_executable(sk265
     src/main.cpp
     src/core/x265_router.cpp
     src/config/cli_parser.cpp
+    src/config/config_file_parser.cpp
+    src/config/cascading_config.cpp
     src/pipeline/input/y4m_input.cpp
     src/pipeline/input/avisynth_input.cpp
     src/pipeline/input/vapoursynth_input.cpp

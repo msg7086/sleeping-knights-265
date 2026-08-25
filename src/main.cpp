@@ -6,6 +6,7 @@
 #include "core/x265_handle.h"
 #include "core/x265_router.h"
 #include "config/cli_parser.h"
+#include "config/cascading_config.h"
 #include "pipeline/input/y4m_input.h"
 #include "pipeline/input/avisynth_input.h"
 #include "pipeline/input/vapoursynth_input.h"
@@ -22,7 +23,7 @@ static void printBanner() {
 
 int main(int argc, char** argv) {
     sk265::utils::installSignalHandler();
-    auto opts = sk265::config::CliParser::parse(argc, argv);
+    auto opts = sk265::config::CascadingConfig::resolve(argc, argv);
 
     if (opts.showHelp || (opts.inputPath.empty() && opts.outputPath.empty() && !opts.showVersion)) {
         sk265::config::CliParser::printHelp();
