@@ -26,5 +26,14 @@ FetchContent_MakeAvailable(Catch2)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
+add_executable(sk265
+    src/main.cpp
+    src/core/x265_router.cpp
+    src/config/cli_parser.cpp
+    src/pipeline/input/y4m_input.cpp
+    src/pipeline/input/avisynth_input.cpp
+    src/pipeline/output/raw_output.cpp
+)
+
 enable_testing()
 add_subdirectory(tests)

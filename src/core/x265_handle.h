@@ -1,14 +1,7 @@
 #pragma once
 #include <memory>
 #include <cstdint>
-
-#ifndef X265_H
-struct x265_param;
-struct x265_picture;
-struct x265_encoder;
-struct x265_nal;
-struct x265_api;
-#endif
+#include "core/x265_api.h"
 
 namespace sk265::core {
 
