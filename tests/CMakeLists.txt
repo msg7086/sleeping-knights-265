@@ -4,6 +4,7 @@ add_executable(sk265_tests
     test_cli_parser.cpp
     test_y4m_input.cpp
     test_avisynth_input.cpp
+    test_vapoursynth_input.cpp
     test_raw_output.cpp
     test_golden_cross_validation.cpp
     test_progress.cpp
@@ -13,6 +14,7 @@ add_executable(sk265_tests
     ../src/config/cli_parser.cpp
     ../src/pipeline/input/y4m_input.cpp
     ../src/pipeline/input/avisynth_input.cpp
+    ../src/pipeline/input/vapoursynth_input.cpp
     ../src/pipeline/output/raw_output.cpp
 )
 

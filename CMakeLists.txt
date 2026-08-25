@@ -49,6 +49,7 @@ add_executable(sk265
     src/config/cli_parser.cpp
     src/pipeline/input/y4m_input.cpp
     src/pipeline/input/avisynth_input.cpp
+    src/pipeline/input/vapoursynth_input.cpp
     src/pipeline/output/raw_output.cpp
 )
 

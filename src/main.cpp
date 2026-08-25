@@ -8,6 +8,7 @@
 #include "config/cli_parser.h"
 #include "pipeline/input/y4m_input.h"
 #include "pipeline/input/avisynth_input.h"
+#include "pipeline/input/vapoursynth_input.h"
 #include "pipeline/output/raw_output.h"
 #include "pipeline/bounded_queue.h"
 #include "utils/progress.h"
@@ -50,6 +51,15 @@ int main(int argc, char** argv) {
             avs->setSeekFrame(opts.seekFrame);
         }
         input = std::move(avs);
+    } else if (opts.inputPath.size() > 4 && opts.inputPath.substr(opts.inputPath.size() - 4) == ".vpy") {
+        auto vpy = std::make_unique<sk265::pipeline::input::VapourSynthInput>();
+        if (!opts.vpyLibPath.empty()) {
+            vpy->setCustomLibraryPath(opts.vpyLibPath);
+        }
+        if (opts.seekFrame > 0) {
+            vpy->setSeekFrame(opts.seekFrame);
+        }
+        input = std::move(vpy);
     } else {
         input = std::make_unique<sk265::pipeline::input::Y4mInput>();
     }

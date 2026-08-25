@@ -90,6 +90,7 @@ struct CliOptions {
     std::string doviRpuPath;
     std::string qpfilePath;
     std::string avsLibPath;
+    std::string vpyLibPath;
     QueueSizeConfig queueConfig;
 
     // Standardized encoder parameters for pass-through to x265_param_parse
