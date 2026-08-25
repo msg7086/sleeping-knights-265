@@ -86,6 +86,7 @@ struct CliOptions {
     bool showHelp{false};
     bool showVersion{false};
     bool bProgress{true};
+    bool bStylish{false};
 
     std::string doviRpuPath;
     std::string qpfilePath;

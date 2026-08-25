@@ -91,6 +91,18 @@ TEST_CASE("CliParser parses --muxer option cleanly", "[config]") {
     REQUIRE(opts.muxer == "lavf");
 }
 
+TEST_CASE("CliParser parses --stylish option cleanly", "[config]") {
+    std::vector<std::string> args = {
+        "sk265",
+        "-i", "input.y4m",
+        "-o", "out.mp4",
+        "--stylish"
+    };
+
+    auto opts = sk265::config::CliParser::parse(args);
+    REQUIRE(opts.bStylish);
+}
+
 TEST_CASE("CliParser supports key=value syntax", "[config]") {
     std::vector<std::string> args = {
         "sk265",

@@ -220,7 +220,7 @@ int main(int argc, char** argv) {
     auto pic_out = sk265::core::make_picture_handle(api);
 
     int64_t expectedFrames = opts.frameCount > 0 ? opts.frameCount : info.totalFrames;
-    sk265::utils::ConsoleProgress progress(expectedFrames, info.fpsNum, info.fpsDen, opts.bProgress);
+    sk265::utils::ConsoleProgress progress(expectedFrames, info.fpsNum, info.fpsDen, opts.bProgress, opts.bStylish);
 
     int framesEncoded = 0;
     uint64_t totalBytesEncoded = 0;
@@ -296,7 +296,7 @@ int main(int argc, char** argv) {
         progress.update(framesEncoded, totalBytesEncoded);
     }
 
-    progress.finish(framesEncoded);
+    progress.finish(framesEncoded, totalBytesEncoded);
     output->close(largestPts, secondLargestPts);
 
     auto elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(
