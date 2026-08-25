@@ -12,6 +12,7 @@ struct CliOptions {
     int seekFrame{0};
     bool showHelp{false};
     bool showVersion{false};
+    bool bProgress{true};
 
     std::string doviRpuPath;
     std::string qpfilePath;

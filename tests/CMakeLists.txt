@@ -6,6 +6,7 @@ add_executable(sk265_tests
     test_avisynth_input.cpp
     test_raw_output.cpp
     test_golden_cross_validation.cpp
+    test_progress.cpp
     ../src/core/x265_router.cpp
     ../src/config/cli_parser.cpp
     ../src/pipeline/input/y4m_input.cpp

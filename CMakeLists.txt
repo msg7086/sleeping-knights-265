@@ -24,8 +24,11 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Catch2)
 
+include(cmake/version.cmake)
+
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_BINARY_DIR}/generated
     ${SK265_BACKEND_CACHE_DIR}/8bit
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/x265/source
 )
