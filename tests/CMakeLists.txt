@@ -1,7 +1,9 @@
 add_executable(sk265_tests
     test_main.cpp
     test_core_router.cpp
+    test_cli_parser.cpp
     ../src/core/x265_router.cpp
+    ../src/config/cli_parser.cpp
 )
 
 target_link_libraries(sk265_tests PRIVATE
