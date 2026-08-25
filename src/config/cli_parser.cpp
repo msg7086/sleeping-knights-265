@@ -36,6 +36,14 @@ CliOptions CliParser::parse(const std::vector<std::string>& args) {
             opts.bStylish = true;
         } else if (arg == "--jsonl") {
             opts.bJsonl = true;
+        } else if (arg == "--progress-file") {
+            opts.progressFilePath = getNext(i);
+        } else if (arg == "--log-file") {
+            opts.logFilePath = getNext(i);
+        } else if (arg == "--log-file-level") {
+            opts.logFileLevel = getNext(i);
+        } else if (arg == "--opts" || arg == "--level-of-options") {
+            opts.encoderParams["opts"] = getNext(i);
         } else if (arg == "-i" || arg == "--input") {
             opts.inputPath = getNext(i);
         } else if (arg == "-o" || arg == "--output") {

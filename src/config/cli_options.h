@@ -93,6 +93,9 @@ struct CliOptions {
     std::string qpfilePath;
     std::string avsLibPath;
     std::string vpyLibPath;
+    std::string progressFilePath;
+    std::string logFilePath;
+    std::string logFileLevel{"info"};
     std::string muxer{"auto"}; // "auto", "lsmash", "lavf", "raw"
     QueueSizeConfig queueConfig;
 

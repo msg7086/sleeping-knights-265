@@ -27,7 +27,21 @@ public:
     bool isStylish() const noexcept { return stylish_; }
     void setJsonl(bool jsonl) noexcept { jsonl_ = jsonl; }
     bool isJsonl() const noexcept { return jsonl_; }
+    void setProgressFile(const std::string& path) { progressFile_ = path; }
     void setTotalFrames(int64_t totalFrames) noexcept { totalFrames_ = totalFrames; }
+
+    void writeProgressFile(int64_t frameNum, uint64_t totalBytes, int64_t elapsedSec) {
+        if (progressFile_.empty()) return;
+        FILE* fp = fopen(progressFile_.c_str(), "wb");
+        if (fp) {
+            fprintf(fp, "{\n \"current_frame\": %lld,\n \"total_frames\": %lld,\n \"current_size\": %llu,\n \"elapsed\": %lld\n}\n",
+                    static_cast<long long>(frameNum),
+                    static_cast<long long>(totalFrames_),
+                    static_cast<unsigned long long>(totalBytes),
+                    static_cast<long long>(elapsedSec));
+            fclose(fp);
+        }
+    }
 
     void printHeader() {
         if (!enabled_ || jsonl_ || !stylish_ || headerPrinted_) return;
@@ -58,6 +72,14 @@ public:
         double elapsedSec = totalElapsedMs > 0 ? (totalElapsedMs / 1000.0) : 0.001;
         double fps = frameNum / elapsedSec;
         double bitrateKbps = (totalBytes * 8.0 / 1000.0) / (frameNum * (static_cast<double>(fpsDen_) / fpsNum_));
+
+        if (!progressFile_.empty()) {
+            auto msSinceFile = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastFileUpdateTime_).count();
+            if (force || msSinceFile >= 1000) {
+                writeProgressFile(frameNum, totalBytes, static_cast<int64_t>(elapsedSec));
+                lastFileUpdateTime_ = now;
+            }
+        }
 
         if (jsonl_) {
             char jsonBuf[320];
@@ -148,8 +170,13 @@ public:
 
     void finish(int64_t frameNum = 0, uint64_t totalBytes = 0) {
         if (!enabled_) return;
+
+        auto totalElapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime_).count();
+        if (!progressFile_.empty()) {
+            writeProgressFile(frameNum > 0 ? frameNum : totalFrames_, totalBytes, static_cast<int64_t>(totalElapsedMs / 1000.0));
+        }
+
         if (jsonl_) {
-            auto totalElapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime_).count();
             double elapsedSec = totalElapsedMs > 0 ? (totalElapsedMs / 1000.0) : 0.001;
             double avgFps = frameNum / elapsedSec;
             char jsonBuf[320];
@@ -194,8 +221,10 @@ private:
     bool stylish_{false};
     bool jsonl_{false};
     bool headerPrinted_{false};
+    std::string progressFile_;
     std::chrono::steady_clock::time_point startTime_;
     std::chrono::steady_clock::time_point lastUpdateTime_;
+    std::chrono::steady_clock::time_point lastFileUpdateTime_;
 };
 
 } // namespace sk265::utils

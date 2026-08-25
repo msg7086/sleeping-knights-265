@@ -115,6 +115,42 @@ TEST_CASE("CliParser parses --jsonl option cleanly", "[config]") {
     REQUIRE(opts.bJsonl);
 }
 
+TEST_CASE("CliParser parses --progress-file and --log-file cleanly", "[config]") {
+    std::vector<std::string> args = {
+        "sk265",
+        "-i", "input.y4m",
+        "-o", "out.mp4",
+        "--progress-file", "progress.json",
+        "--log-file", "encode.log",
+        "--log-file-level", "debug"
+    };
+
+    auto opts = sk265::config::CliParser::parse(args);
+    REQUIRE(opts.progressFilePath == "progress.json");
+    REQUIRE(opts.logFilePath == "encode.log");
+    REQUIRE(opts.logFileLevel == "debug");
+}
+
+TEST_CASE("CliParser parses --opts and --level-of-options cleanly", "[config]") {
+    std::vector<std::string> args1 = {
+        "sk265",
+        "-i", "input.y4m",
+        "-o", "out.mp4",
+        "--opts", "2"
+    };
+    auto opts1 = sk265::config::CliParser::parse(args1);
+    REQUIRE(opts1.encoderParams["opts"] == "2");
+
+    std::vector<std::string> args2 = {
+        "sk265",
+        "-i", "input.y4m",
+        "-o", "out.mp4",
+        "--level-of-options", "0"
+    };
+    auto opts2 = sk265::config::CliParser::parse(args2);
+    REQUIRE(opts2.encoderParams["opts"] == "0");
+}
+
 TEST_CASE("CliParser supports key=value syntax", "[config]") {
     std::vector<std::string> args = {
         "sk265",

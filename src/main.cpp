@@ -221,6 +221,9 @@ int main(int argc, char** argv) {
 
     int64_t expectedFrames = opts.frameCount > 0 ? opts.frameCount : info.totalFrames;
     sk265::utils::ConsoleProgress progress(expectedFrames, info.fpsNum, info.fpsDen, opts.bProgress, opts.bStylish, opts.bJsonl);
+    if (!opts.progressFilePath.empty()) {
+        progress.setProgressFile(opts.progressFilePath);
+    }
 
     int framesEncoded = 0;
     uint64_t totalBytesEncoded = 0;
