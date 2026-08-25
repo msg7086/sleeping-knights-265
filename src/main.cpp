@@ -1,6 +1,7 @@
 #include <iostream>
 #include <chrono>
 #include <memory>
+#include <thread>
 #include <cstring>
 #include "core/x265_handle.h"
 #include "core/x265_router.h"
@@ -8,6 +9,7 @@
 #include "pipeline/input/y4m_input.h"
 #include "pipeline/input/avisynth_input.h"
 #include "pipeline/output/raw_output.h"
+#include "pipeline/bounded_queue.h"
 #include "utils/progress.h"
 #include "utils/signal_handler.h"
 #include "version.h"
@@ -125,10 +127,39 @@ int main(int argc, char** argv) {
         }
     }
 
+    size_t queueCapacity = opts.queueConfig.resolveCapacity(info.width, info.height, bitDepth, info.colorSpace);
     std::cerr << "sk265[info]: Encoding " << info.width << "x" << info.height
-              << " (" << bitDepth << "-bit) -> " << opts.outputPath << "\n";
+              << " (" << bitDepth << "-bit) -> " << opts.outputPath
+              << " (Prefetch queue: " << queueCapacity << " frames)\n";
 
-    // 7. Frame processing loop
+    // 7. Initialize asynchronous bounded prefetch queue and producer thread
+    sk265::pipeline::BoundedQueue<sk265::pipeline::VideoFrame> queue(queueCapacity);
+
+    std::jthread producer([&](std::stop_token st) {
+        int64_t framesRead = 0;
+        while (!st.stop_requested() && !sk265::utils::isInterrupted()) {
+            if (opts.frameCount > 0 && framesRead >= opts.frameCount + opts.seekFrame) {
+                break;
+            }
+
+            auto frameOpt = input->readFrame();
+            if (!frameOpt.has_value()) {
+                break; // EOF
+            }
+
+            if (frameOpt->pts < opts.seekFrame) {
+                continue; // Skip frames before seek offset
+            }
+
+            framesRead++;
+            if (!queue.push(std::move(*frameOpt), st)) {
+                break;
+            }
+        }
+        queue.close();
+    });
+
+    // 8. Main encoding consumer loop
     auto pic_in = sk265::core::make_picture_handle(api);
     auto pic_out = sk265::core::make_picture_handle(api);
 
@@ -142,23 +173,23 @@ int main(int argc, char** argv) {
     while (true) {
         if (sk265::utils::isInterrupted()) {
             std::cerr << "\nsk265[info]: Interrupt received, flushing remaining frames...\n";
+            sk265::utils::requestStop();
+            queue.close();
             break;
         }
 
         if (opts.frameCount > 0 && framesEncoded >= opts.frameCount) {
+            sk265::utils::requestStop();
+            queue.close();
             break;
         }
 
-        auto frameOpt = input->readFrame();
+        auto frameOpt = queue.pop();
         if (!frameOpt.has_value()) {
-            break; // EOF
+            break; // EOF or queue closed
         }
 
         auto& frame = *frameOpt;
-        if (frame.pts < opts.seekFrame) {
-            continue; // Skip frames before seek offset
-        }
-
         api->picture_init(param.raw(), pic_in.raw());
         pic_in->planes[0] = const_cast<uint8_t*>(frame.planes[0].data());
         pic_in->stride[0] = static_cast<int>(frame.strides[0]);
@@ -186,7 +217,7 @@ int main(int argc, char** argv) {
         progress.update(framesEncoded, totalBytesEncoded);
     }
 
-    // 8. Flush encoder buffer
+    // 9. Flush encoder buffer
     while (true) {
         nals = nullptr;
         nalCount = 0;

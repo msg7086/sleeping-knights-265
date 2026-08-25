@@ -8,6 +8,7 @@ add_executable(sk265_tests
     test_golden_cross_validation.cpp
     test_progress.cpp
     test_signal_and_pipe.cpp
+    test_bounded_queue.cpp
     ../src/core/x265_router.cpp
     ../src/config/cli_parser.cpp
     ../src/pipeline/input/y4m_input.cpp
