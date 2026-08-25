@@ -15,7 +15,13 @@ add_executable(sk265_tests
 
 target_link_libraries(sk265_tests PRIVATE
     Catch2::Catch2WithMain
+    x265_8bit
+    x265_10bit
+    x265_12bit
 )
+if(WIN32)
+    target_link_libraries(sk265_tests PRIVATE ws2_32)
+endif()
 
 include(CTest)
 include(Catch)

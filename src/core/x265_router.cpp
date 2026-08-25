@@ -2,75 +2,9 @@
 #include "core/x265_handle.h"
 #include "core/x265_api.h"
 
-struct x265_encoder {
-    int bitDepth;
-};
-
-namespace x265_8bit {
-    static x265_param* alloc_p() { return new x265_param{8, 0, 0, 25, 1, 1, 0, 0}; }
-    static void free_p(x265_param* p) { delete p; }
-    static void def_p(x265_param* p) { if (p) { p->bitDepth = 8; p->fpsNum = 25; p->fpsDenom = 1; } }
-    static int def_preset(x265_param*, const char*, const char*) { return 0; }
-    static int parse_p(x265_param*, const char*, const char*) { return 0; }
-    static x265_picture* alloc_pic() { return new x265_picture{1, 8, {nullptr, nullptr, nullptr}, {0, 0, 0}, 0, 0, 0, 0}; }
-    static void free_pic(x265_picture* p) { delete p; }
-    static void init_pic(x265_param*, x265_picture*) {}
-    static x265_encoder* enc_open(x265_param*) { return new x265_encoder{8}; }
-    static int enc_headers(x265_encoder*, x265_nal**, uint32_t* n) { if (n) *n = 0; return 0; }
-    static int enc_encode(x265_encoder*, x265_nal**, uint32_t* n, x265_picture*, x265_picture*) { if (n) *n = 0; return 0; }
-    static void enc_close(x265_encoder* e) { delete e; }
-    static char* p2s(x265_param*, int) { return nullptr; }
-
-    static const x265_api api_8bit = {
-        212, 8, alloc_p, free_p, def_p, def_preset, parse_p,
-        alloc_pic, free_pic, init_pic, enc_open, enc_headers, enc_encode, enc_close, p2s
-    };
-    const x265_api* x265_api_get(int) { return &api_8bit; }
-}
-
-namespace x265_10bit {
-    static x265_param* alloc_p() { return new x265_param{10, 0, 0, 25, 1, 1, 0, 0}; }
-    static void free_p(x265_param* p) { delete p; }
-    static void def_p(x265_param* p) { if (p) { p->bitDepth = 10; p->fpsNum = 25; p->fpsDenom = 1; } }
-    static int def_preset(x265_param*, const char*, const char*) { return 0; }
-    static int parse_p(x265_param*, const char*, const char*) { return 0; }
-    static x265_picture* alloc_pic() { return new x265_picture{1, 10, {nullptr, nullptr, nullptr}, {0, 0, 0}, 0, 0, 0, 0}; }
-    static void free_pic(x265_picture* p) { delete p; }
-    static void init_pic(x265_param*, x265_picture*) {}
-    static x265_encoder* enc_open(x265_param*) { return new x265_encoder{10}; }
-    static int enc_headers(x265_encoder*, x265_nal**, uint32_t* n) { if (n) *n = 0; return 0; }
-    static int enc_encode(x265_encoder*, x265_nal**, uint32_t* n, x265_picture*, x265_picture*) { if (n) *n = 0; return 0; }
-    static void enc_close(x265_encoder* e) { delete e; }
-    static char* p2s(x265_param*, int) { return nullptr; }
-
-    static const x265_api api_10bit = {
-        212, 10, alloc_p, free_p, def_p, def_preset, parse_p,
-        alloc_pic, free_pic, init_pic, enc_open, enc_headers, enc_encode, enc_close, p2s
-    };
-    const x265_api* x265_api_get(int) { return &api_10bit; }
-}
-
-namespace x265_12bit {
-    static x265_param* alloc_p() { return new x265_param{12, 0, 0, 25, 1, 1, 0, 0}; }
-    static void free_p(x265_param* p) { delete p; }
-    static void def_p(x265_param* p) { if (p) { p->bitDepth = 12; p->fpsNum = 25; p->fpsDenom = 1; } }
-    static int def_preset(x265_param*, const char*, const char*) { return 0; }
-    static int parse_p(x265_param*, const char*, const char*) { return 0; }
-    static x265_picture* alloc_pic() { return new x265_picture{1, 12, {nullptr, nullptr, nullptr}, {0, 0, 0}, 0, 0, 0, 0}; }
-    static void free_pic(x265_picture* p) { delete p; }
-    static void init_pic(x265_param*, x265_picture*) {}
-    static x265_encoder* enc_open(x265_param*) { return new x265_encoder{12}; }
-    static int enc_headers(x265_encoder*, x265_nal**, uint32_t* n) { if (n) *n = 0; return 0; }
-    static int enc_encode(x265_encoder*, x265_nal**, uint32_t* n, x265_picture*, x265_picture*) { if (n) *n = 0; return 0; }
-    static void enc_close(x265_encoder* e) { delete e; }
-    static char* p2s(x265_param*, int) { return nullptr; }
-
-    static const x265_api api_12bit = {
-        212, 12, alloc_p, free_p, def_p, def_preset, parse_p,
-        alloc_pic, free_pic, init_pic, enc_open, enc_headers, enc_encode, enc_close, p2s
-    };
-    const x265_api* x265_api_get(int) { return &api_12bit; }
-}
+extern "C" const x265_api* x265_api_get(int);
+namespace x265_10bit { const x265_api* x265_api_get(int); }
+namespace x265_12bit { const x265_api* x265_api_get(int); }
 
 namespace sk265::core {
 
@@ -114,7 +48,7 @@ EncoderHandle make_encoder_handle(const x265_api* api, x265_param* param) {
 
 const x265_api* CoreRouter::getApi(int bitDepth) {
     switch (bitDepth) {
-        case 8:  return x265_8bit::x265_api_get(0);
+        case 8:  return x265_api_get(0);
         case 10: return x265_10bit::x265_api_get(0);
         case 12: return x265_12bit::x265_api_get(0);
         default: return nullptr;

@@ -68,7 +68,9 @@ int main(int argc, char** argv) {
     param->sourceHeight = info.height;
     param->fpsNum = info.fpsNum;
     param->fpsDenom = info.fpsDen;
-    param->bitDepth = bitDepth;
+    param->internalBitDepth = bitDepth;
+    param->sourceBitDepth = info.bitDepth;
+    param->internalCsp = X265_CSP_I420;
 
     // Forward pass-through parameters directly to x265_param_parse
     for (const auto& [name, value] : opts.encoderParams) {

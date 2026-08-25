@@ -24,7 +24,21 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Catch2)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
+include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${SK265_BACKEND_CACHE_DIR}/8bit
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/x265/source
+)
+
+# Imported multi-depth x265 static libraries from persistent cache
+add_library(x265_8bit STATIC IMPORTED)
+set_target_properties(x265_8bit PROPERTIES IMPORTED_LOCATION "${SK265_BACKEND_CACHE_DIR}/8bit/libx265.a")
+
+add_library(x265_10bit STATIC IMPORTED)
+set_target_properties(x265_10bit PROPERTIES IMPORTED_LOCATION "${SK265_BACKEND_CACHE_DIR}/10bit/libx265.a")
+
+add_library(x265_12bit STATIC IMPORTED)
+set_target_properties(x265_12bit PROPERTIES IMPORTED_LOCATION "${SK265_BACKEND_CACHE_DIR}/12bit/libx265.a")
 
 add_executable(sk265
     src/main.cpp
@@ -34,6 +48,15 @@ add_executable(sk265
     src/pipeline/input/avisynth_input.cpp
     src/pipeline/output/raw_output.cpp
 )
+
+target_link_libraries(sk265 PRIVATE
+    x265_8bit
+    x265_10bit
+    x265_12bit
+)
+if(WIN32)
+    target_link_libraries(sk265 PRIVATE ws2_32)
+endif()
 
 enable_testing()
 add_subdirectory(tests)
