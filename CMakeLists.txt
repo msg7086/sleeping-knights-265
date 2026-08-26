@@ -158,6 +158,12 @@ target_link_libraries(sk265 PRIVATE
 )
 if(WIN32)
     target_link_libraries(sk265 PRIVATE ws2_32 bcrypt secur32 strmiids mfplat mfuuid ole32 winpthread)
+else()
+    find_package(Numa QUIET)
+    if(NUMA_FOUND)
+        target_link_libraries(sk265 PRIVATE ${NUMA_LIBRARY})
+    endif()
+    target_link_libraries(sk265 PRIVATE ${CMAKE_DL_LIBS} pthread)
 endif()
 
 enable_testing()
