@@ -1,6 +1,9 @@
 #include "pipeline/output/raw_output.h"
 #include <fcntl.h>
+
+#ifdef _WIN32
 #include <io.h>
+#endif
 
 namespace sk265::pipeline::output {
 
