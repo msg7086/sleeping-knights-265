@@ -2,7 +2,7 @@
 #include "core/x265_handle.h"
 #include "core/x265_api.h"
 
-extern "C" const x265_api* x265_api_get(int);
+namespace x265_8bit  { const x265_api* x265_api_get(int); }
 namespace x265_10bit { const x265_api* x265_api_get(int); }
 namespace x265_12bit { const x265_api* x265_api_get(int); }
 
@@ -48,7 +48,7 @@ EncoderHandle make_encoder_handle(const x265_api* api, x265_param* param) {
 
 const x265_api* CoreRouter::getApi(int bitDepth) {
     switch (bitDepth) {
-        case 8:  return x265_api_get(0);
+        case 8:  return x265_8bit::x265_api_get(0);
         case 10: return x265_10bit::x265_api_get(0);
         case 12: return x265_12bit::x265_api_get(0);
         default: return nullptr;
