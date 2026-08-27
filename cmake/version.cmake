@@ -61,24 +61,30 @@ if(GIT_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
 
         # 4. Get short commit hash
         execute_process(
-            COMMAND ${GIT_EXECUTABLE} log --pretty=format:%h -n 1
+            COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
             OUTPUT_VARIABLE SK265_COMMIT_HASH
             OUTPUT_STRIP_TRAILING_WHITESPACE
             ERROR_QUIET
         )
 
+        if(SK265_COMMIT_HASH)
+            set(SK265_GIT_HASH_STR "-g${SK265_COMMIT_HASH}")
+        else()
+            set(SK265_GIT_HASH_STR "")
+        endif()
+
         # 5. Check if on a release/* branch vs master/development branch
         if(SK265_BRANCH_NAME MATCHES "^release/.*" OR SK265_BRANCH_NAME MATCHES "^release-.*")
             # Stable maintenance branch -> patch advancement (e.g. 0.1.0+2-g574e181)
             if(SK265_LATEST_TAG MATCHES "^v?([0-9]+\\.[0-9]+\\.[0-9]+)")
-                set(SK265_VERSION_STRING "${CMAKE_MATCH_1}+${SK265_TAG_DISTANCE}-g${SK265_COMMIT_HASH}")
+                set(SK265_VERSION_STRING "${CMAKE_MATCH_1}+${SK265_TAG_DISTANCE}${SK265_GIT_HASH_STR}")
             else()
-                set(SK265_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.0+${SK265_TAG_DISTANCE}-g${SK265_COMMIT_HASH}")
+                set(SK265_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.0+${SK265_TAG_DISTANCE}${SK265_GIT_HASH_STR}")
             endif()
         else()
             # Master / feature / dev branch -> target X.Y.dev (e.g. 0.1.dev+10-g574e181)
-            set(SK265_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.dev+${SK265_TAG_DISTANCE}-g${SK265_COMMIT_HASH}")
+            set(SK265_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.dev+${SK265_TAG_DISTANCE}${SK265_GIT_HASH_STR}")
         endif()
     endif()
 endif()

@@ -272,7 +272,8 @@ int main(int argc, char** argv) {
         pic_in->planes[2] = const_cast<uint8_t*>(frame.planes[2].data());
         pic_in->stride[2] = static_cast<int>(frame.strides[2]);
         pic_in->pts = frame.pts;
-        pic_in->bitDepth = bitDepth;
+        pic_in->bitDepth = frame.bitDepth;
+        pic_in->colorSpace = frame.colorSpace;
 
         nals = nullptr;
         nalCount = 0;
@@ -288,7 +289,9 @@ int main(int argc, char** argv) {
                 largestPts = pic_out->pts;
             }
             output->writeFrame(nals, nalCount, *pic_out.raw());
-            totalBytesEncoded += bytes;
+            for (uint32_t i = 0; i < nalCount; ++i) {
+                totalBytesEncoded += nals[i].sizeBytes;
+            }
         }
 
         framesEncoded++;
@@ -308,7 +311,9 @@ int main(int argc, char** argv) {
             largestPts = pic_out->pts;
         }
         output->writeFrame(nals, nalCount, *pic_out.raw());
-        totalBytesEncoded += bytes;
+        for (uint32_t i = 0; i < nalCount; ++i) {
+            totalBytesEncoded += nals[i].sizeBytes;
+        }
         progress.update(framesEncoded, totalBytesEncoded);
     }
 
