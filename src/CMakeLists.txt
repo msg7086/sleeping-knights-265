@@ -12,6 +12,7 @@ add_executable(sk265
     pipeline/output/raw_output.cpp
     pipeline/output/mp4_output.cpp
     pipeline/output/lavf_output.cpp
+    pipeline/output/gop_output.cpp
     pipeline/output/output_factory.cpp
 )
 

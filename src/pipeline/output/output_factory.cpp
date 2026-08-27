@@ -2,6 +2,7 @@
 #include "pipeline/output/raw_output.h"
 #include "pipeline/output/mp4_output.h"
 #include "pipeline/output/lavf_output.h"
+#include "pipeline/output/gop_output.h"
 #include <algorithm>
 #include <cctype>
 
@@ -15,7 +16,7 @@ static bool hasExtension(const std::string& path, const std::string& ext) {
 
 static bool isKnownContainer(const std::string& path) {
     std::vector<std::string> containerExts = {
-        ".mp4", ".m4v", ".mov", ".mkv", ".webm", ".ts", ".m2ts", ".mts", ".avi", ".flv", ".ogv"
+        ".mp4", ".m4v", ".mov", ".mkv", ".webm", ".ts", ".m2ts", ".mts", ".avi", ".flv", ".ogv", ".gop"
     };
     for (const auto& ext : containerExts) {
         if (hasExtension(path, ext)) return true;
@@ -32,27 +33,50 @@ OutputFactoryResult OutputFactory::create(const std::string& muxerParam, const s
     }
 
     // 1. Validate muxer parameter name
-    if (muxer != "auto" && muxer != "lsmash" && muxer != "lavf" && muxer != "ffmpeg" && muxer != "raw") {
+    if (muxer != "auto" && muxer != "lsmash" && muxer != "lavf" && muxer != "ffmpeg" && muxer != "raw" && muxer != "gop") {
         res.success = false;
-        res.errorMessage = "Unknown muxer '" + muxerParam + "' (supported: auto, lsmash, lavf/ffmpeg, raw)";
+        res.errorMessage = "Unknown muxer '" + muxerParam + "' (supported: auto, lsmash, lavf/ffmpeg, raw, gop)";
         return res;
+    }
+
+    // Strip query parameters for extension checks
+    std::string cleanPath = outputPath;
+    auto qPos = cleanPath.find('?');
+    if (qPos != std::string::npos) {
+        cleanPath = cleanPath.substr(0, qPos);
     }
 
     // 2. Resolve target muxer engine
     std::string resolvedMuxer = muxer;
     if (muxer == "auto") {
-        if (hasExtension(outputPath, ".mp4") || hasExtension(outputPath, ".m4v") || hasExtension(outputPath, ".mov")) {
+        if (hasExtension(cleanPath, ".mp4") || hasExtension(cleanPath, ".m4v") || hasExtension(cleanPath, ".mov")) {
             resolvedMuxer = "lsmash";
-        } else if (hasExtension(outputPath, ".mkv")) {
+        } else if (hasExtension(cleanPath, ".mkv")) {
             resolvedMuxer = "lavf";
+        } else if (hasExtension(cleanPath, ".gop")) {
+            resolvedMuxer = "gop";
         } else {
             resolvedMuxer = "raw"; // Defaults to raw for .hevc, .h265, .265, .bin, .raw, .bit, -, etc.
         }
     }
 
     // 3. Verify format and container compatibility
+    if (resolvedMuxer == "gop") {
+        if (!hasExtension(cleanPath, ".gop")) {
+            res.success = false;
+            res.errorMessage = "Muxer 'gop' only supports GOP manifest files (.gop), got: " + outputPath;
+            return res;
+        }
+        res.instance.output = std::make_unique<GopOutput>();
+        res.instance.muxerName = "gop";
+        res.instance.bAnnexB = false;
+        res.instance.bRepeatHeaders = false;
+        res.success = true;
+        return res;
+    }
+
     if (resolvedMuxer == "lsmash") {
-        if (!hasExtension(outputPath, ".mp4") && !hasExtension(outputPath, ".m4v") && !hasExtension(outputPath, ".mov")) {
+        if (!hasExtension(cleanPath, ".mp4") && !hasExtension(cleanPath, ".m4v") && !hasExtension(cleanPath, ".mov")) {
             res.success = false;
             res.errorMessage = "Muxer 'lsmash' only supports MP4/MOV container files (.mp4, .m4v, .mov), got: " + outputPath;
             return res;
@@ -66,7 +90,7 @@ OutputFactoryResult OutputFactory::create(const std::string& muxerParam, const s
     }
 
     if (resolvedMuxer == "lavf" || resolvedMuxer == "ffmpeg") {
-        if (outputPath == "-" || !isKnownContainer(outputPath)) {
+        if (cleanPath == "-" || !isKnownContainer(cleanPath)) {
             res.success = false;
             res.errorMessage = "Muxer 'lavf' is a container multiplexer and cannot output raw bitstream (" + outputPath + "), use '--muxer raw' instead";
             return res;
@@ -80,7 +104,7 @@ OutputFactoryResult OutputFactory::create(const std::string& muxerParam, const s
     }
 
     if (resolvedMuxer == "raw") {
-        if (isKnownContainer(outputPath)) {
+        if (isKnownContainer(cleanPath)) {
             res.success = false;
             res.errorMessage = "Muxer 'raw' is for Annex-B bitstreams (.hevc, .h265, .265, .bin, .raw), cannot output to container file: " + outputPath;
             return res;

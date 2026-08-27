@@ -175,6 +175,10 @@ int main(int argc, char** argv) {
     outCfg.transferCharacteristics = param->vui.transferCharacteristics;
     outCfg.matrixCoeffs = param->vui.matrixCoeffs;
     outCfg.fullRange = (param->vui.bEnableVideoFullRangeFlag == 1);
+    outCfg.bframes = param->bframes;
+    outCfg.bBPyramid = param->bBPyramid;
+    outCfg.timebaseNum = info.fpsDen;
+    outCfg.timebaseDen = info.fpsNum;
 
     if (!output->open(outCfg)) {
         std::cerr << "sk265[error]: Failed to open output destination: " << opts.outputPath << "\n";

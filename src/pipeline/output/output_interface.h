@@ -24,6 +24,12 @@ struct OutputConfig {
     int transferCharacteristics{-1};
     int matrixCoeffs{-1};
     bool fullRange{false};
+
+    // Encoding structure & timebase metadata for GOP / options output
+    int bframes{0};
+    int bBPyramid{0};
+    int timebaseNum{0};
+    int timebaseDen{0};
 };
 
 class IOutput {
