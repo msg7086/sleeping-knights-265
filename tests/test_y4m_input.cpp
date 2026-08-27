@@ -52,3 +52,26 @@ TEST_CASE("Y4mInput parses 10-bit Y4M streams", "[input]") {
     REQUIRE(frame10->planes[1].size() == 8);
     REQUIRE(frame10->planes[2].size() == 8);
 }
+
+TEST_CASE("Y4mInput preserves distinct planar Y, U, V color values", "[input][y4m][color]") {
+    // 4x4 YUV420: Y=16 bytes of 0xEB, U=4 bytes of 0x20, V=4 bytes of 0xD0
+    std::string header = "YUV4MPEG2 W4 H4 F25:1 Ip A1:1 C420\nFRAME\n";
+    std::string yData(16, static_cast<char>(0xEB));
+    std::string uData(4, static_cast<char>(0x20));
+    std::string vData(4, static_cast<char>(0xD0));
+    std::istringstream stream(header + yData + uData + vData);
+
+    sk265::pipeline::input::Y4mInput input;
+    REQUIRE(input.openFromStream(stream));
+
+    auto frameOpt = input.readFrame();
+    REQUIRE(frameOpt.has_value());
+    const auto& frame = *frameOpt;
+
+    CHECK(frame.planes[0][0] == 0xEB);
+    CHECK(frame.planes[1][0] == 0x20);
+    CHECK(frame.planes[2][0] == 0xD0);
+
+    CHECK(frame.planes[0][0] != frame.planes[1][0]);
+    CHECK(frame.planes[1][0] != frame.planes[2][0]);
+}

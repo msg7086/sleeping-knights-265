@@ -9,6 +9,20 @@
 
 #define AVS_INTERFACE_26 6
 
+enum {
+    AVS_PLANAR_Y = 1 << 0,
+    AVS_PLANAR_U = 1 << 1,
+    AVS_PLANAR_V = 1 << 2,
+    AVS_PLANAR_ALIGNED = 1 << 3,
+    AVS_PLANAR_Y_ALIGNED = AVS_PLANAR_Y | AVS_PLANAR_ALIGNED,
+    AVS_PLANAR_U_ALIGNED = AVS_PLANAR_U | AVS_PLANAR_ALIGNED,
+    AVS_PLANAR_V_ALIGNED = AVS_PLANAR_V | AVS_PLANAR_ALIGNED,
+    AVS_PLANAR_A = 1 << 4,
+    AVS_PLANAR_R = 1 << 5,
+    AVS_PLANAR_G = 1 << 6,
+    AVS_PLANAR_B = 1 << 7
+};
+
 struct AVS_Clip;
 struct AVS_ScriptEnvironment;
 struct AVS_VideoFrame;

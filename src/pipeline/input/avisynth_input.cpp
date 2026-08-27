@@ -228,9 +228,11 @@ std::optional<VideoFrame> AviSynthInput::readFrame() {
 
     // Copy planar data safely
     int bytesPerSample = (info_.bitDepth > 8) ? 2 : 1;
+    static const int avsPlanes[3] = { AVS_PLANAR_Y, AVS_PLANAR_U, AVS_PLANAR_V };
     for (int p = 0; p < planeCount_; ++p) {
-        const uint8_t* src = func_.avs_get_read_ptr_p ? func_.avs_get_read_ptr_p(avsFrm, p) : func_.avs_get_read_ptr(avsFrm);
-        int srcPitch = func_.avs_get_pitch_p ? func_.avs_get_pitch_p(avsFrm, p) : func_.avs_get_pitch(avsFrm);
+        int avsPlane = avsPlanes[p];
+        const uint8_t* src = func_.avs_get_read_ptr_p ? func_.avs_get_read_ptr_p(avsFrm, avsPlane) : (p == 0 ? func_.avs_get_read_ptr(avsFrm) : nullptr);
+        int srcPitch = func_.avs_get_pitch_p ? func_.avs_get_pitch_p(avsFrm, avsPlane) : (p == 0 ? func_.avs_get_pitch(avsFrm) : 0);
         if (!src) continue;
 
         int h = info_.height;
