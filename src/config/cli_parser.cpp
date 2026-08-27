@@ -30,6 +30,10 @@ CliOptions CliParser::parse(const std::vector<std::string>& args) {
             opts.showVersion = true;
         } else if (arg == "--no-progress") {
             opts.bProgress = false;
+        } else if (arg == "--no-asm") {
+            opts.encoderParams["asm"] = "0";
+        } else if (arg == "--asm") {
+            opts.encoderParams["asm"] = getNext(i);
         } else if (arg == "--progress") {
             opts.bProgress = true;
         } else if (arg == "--stylish") {

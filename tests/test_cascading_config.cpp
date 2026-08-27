@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <fstream>
 #include "config/cascading_config.h"
+#include "utils/cpu_features.h"
 
 TEST_CASE("CascadingConfig verifies priority: default.txt < profile.txt < CLI arguments", "[config][cascade]") {
     std::string globalConfig = "test_global_default.txt";
@@ -88,4 +89,33 @@ TEST_CASE("CascadingConfig verifies priority: default.txt < profile.txt < CLI ar
 
     std::filesystem::remove(globalConfig);
     std::filesystem::remove(profileA);
+}
+
+TEST_CASE("CascadingConfig resolves asm hardware default and user overrides", "[config][cascade]") {
+    bool hasAvx512Bf16 = sk265::utils::CpuFeatures::detect().shouldDefaultEnableAvx512();
+
+    SECTION("Default invocation without asm setting") {
+        std::vector<std::string> args = {"sk265", "-i", "in.y4m", "-o", "out.hevc", "--no-global-config"};
+        auto opts = sk265::config::CascadingConfig::resolve(args);
+        if (hasAvx512Bf16) {
+            REQUIRE(opts.encoderParams.count("asm") == 1);
+            REQUIRE(opts.encoderParams["asm"] == "avx512");
+        } else {
+            REQUIRE(opts.encoderParams.count("asm") == 0);
+        }
+    }
+
+    SECTION("CLI --no-asm overrides hardware default") {
+        std::vector<std::string> args = {"sk265", "-i", "in.y4m", "-o", "out.hevc", "--no-global-config", "--no-asm"};
+        auto opts = sk265::config::CascadingConfig::resolve(args);
+        REQUIRE(opts.encoderParams.count("asm") == 1);
+        REQUIRE(opts.encoderParams["asm"] == "0");
+    }
+
+    SECTION("CLI --asm avx2 overrides hardware default") {
+        std::vector<std::string> args = {"sk265", "-i", "in.y4m", "-o", "out.hevc", "--no-global-config", "--asm", "avx2"};
+        auto opts = sk265::config::CascadingConfig::resolve(args);
+        REQUIRE(opts.encoderParams.count("asm") == 1);
+        REQUIRE(opts.encoderParams["asm"] == "avx2");
+    }
 }

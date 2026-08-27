@@ -164,3 +164,26 @@ TEST_CASE("CliParser supports key=value syntax", "[config]") {
     REQUIRE(opts.encoderParams["crf"] == "16");
     REQUIRE(opts.encoderParams["qg-size"] == "32");
 }
+
+TEST_CASE("CliParser normalizes --no-asm and --asm options cleanly", "[config]") {
+    SECTION("--no-asm maps to asm=0") {
+        std::vector<std::string> args = {"sk265", "-i", "in.y4m", "-o", "out.hevc", "--no-asm"};
+        auto opts = sk265::config::CliParser::parse(args);
+        REQUIRE(opts.encoderParams.count("asm") == 1);
+        REQUIRE(opts.encoderParams["asm"] == "0");
+    }
+
+    SECTION("--asm <val> assigns value") {
+        std::vector<std::string> args = {"sk265", "-i", "in.y4m", "-o", "out.hevc", "--asm", "avx2"};
+        auto opts = sk265::config::CliParser::parse(args);
+        REQUIRE(opts.encoderParams.count("asm") == 1);
+        REQUIRE(opts.encoderParams["asm"] == "avx2");
+    }
+
+    SECTION("--asm=<val> assigns value") {
+        std::vector<std::string> args = {"sk265", "-i", "in.y4m", "-o", "out.hevc", "--asm=sse4.2"};
+        auto opts = sk265::config::CliParser::parse(args);
+        REQUIRE(opts.encoderParams.count("asm") == 1);
+        REQUIRE(opts.encoderParams["asm"] == "sse4.2");
+    }
+}

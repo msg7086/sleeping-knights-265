@@ -20,6 +20,7 @@ add_executable(sk265_tests
     test_signal_and_pipe.cpp
     test_bounded_queue.cpp
     test_log_mirror.cpp
+    test_cpu_features.cpp
     ../src/core/x265_router.cpp
     ../src/core/tuning_preset.cpp
     ../src/config/cli_parser.cpp
@@ -36,6 +37,7 @@ add_executable(sk265_tests
     ../src/pipeline/output/async_output.cpp
     ../src/pipeline/output/output_factory.cpp
     ../src/utils/log_mirror.cpp
+    ../src/utils/cpu_features.cpp
 )
 
 target_link_libraries(sk265_tests PRIVATE

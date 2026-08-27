@@ -16,6 +16,7 @@ add_executable(sk265
     pipeline/output/async_output.cpp
     pipeline/output/output_factory.cpp
     utils/log_mirror.cpp
+    utils/cpu_features.cpp
 )
 
 target_link_libraries(sk265 PRIVATE

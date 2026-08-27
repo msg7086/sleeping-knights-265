@@ -1,5 +1,6 @@
 #include "config/cascading_config.h"
 #include "config/config_file_parser.h"
+#include "utils/cpu_features.h"
 #include <iostream>
 
 namespace sk265::config {
@@ -82,7 +83,16 @@ CliOptions CascadingConfig::resolve(
         combinedArgs.push_back(arg);
     }
 
-    return CliParser::parse(combinedArgs);
+    auto opts = CliParser::parse(combinedArgs);
+
+    // Hardware-aware default: enable avx512 on AVX512_BF16 capable CPUs if not explicitly specified
+    if (opts.encoderParams.find("asm") == opts.encoderParams.end()) {
+        if (utils::CpuFeatures::detect().shouldDefaultEnableAvx512()) {
+            opts.encoderParams["asm"] = "avx512";
+        }
+    }
+
+    return opts;
 }
 
 CliOptions CascadingConfig::resolve(
