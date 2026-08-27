@@ -11,6 +11,7 @@ namespace fs = std::filesystem;
 
 class MockSlowOutput : public sk265::pipeline::output::IOutput {
 public:
+    [[nodiscard]] std::string_view getTag() const noexcept override { return "mock"; }
     bool open(const sk265::pipeline::output::OutputConfig& /*config*/) override {
         opened = true;
         return true;

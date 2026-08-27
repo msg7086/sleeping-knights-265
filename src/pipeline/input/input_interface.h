@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 #include "pipeline/frame.h"
 
 namespace sk265::pipeline::input {
@@ -19,6 +20,7 @@ struct InputInfo {
 class IInput {
 public:
     virtual ~IInput() = default;
+    [[nodiscard]] virtual std::string_view getTag() const noexcept = 0;
     virtual bool open(const std::string& path) = 0;
     virtual InputInfo getInfo() const = 0;
     virtual std::optional<VideoFrame> readFrame() = 0;

@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <string_view>
 #include <cstdint>
 #include "core/x265_api.h"
 
@@ -35,6 +36,7 @@ struct OutputConfig {
 class IOutput {
 public:
     virtual ~IOutput() = default;
+    [[nodiscard]] virtual std::string_view getTag() const noexcept = 0;
     virtual bool open(const OutputConfig& config) = 0;
     virtual bool writeHeaders(const x265_nal* nals, uint32_t nalCount) = 0;
     virtual bool writeFrame(const x265_nal* nals, uint32_t nalCount, const x265_picture& pic) = 0;

@@ -11,6 +11,7 @@ public:
     LavfInput();
     ~LavfInput() override;
 
+    [[nodiscard]] std::string_view getTag() const noexcept override { return "lavf"; }
     void setSeekFrame(int64_t seekFrame);
 
     bool open(const std::string& path) override;

@@ -17,10 +17,11 @@
 #include "utils/progress.h"
 #include "utils/signal_handler.h"
 #include "utils/log_mirror.h"
+#include "utils/log_format.h"
 #include "version.h"
 
 static void printBanner() {
-    std::cerr << "sk265[info]: version " << SK265_VERSION << "\n";
+    std::cerr << "sk265 [info]: version " << SK265_VERSION << "\n";
 }
 
 int main(int argc, char** argv) {
@@ -95,6 +96,8 @@ int main(int argc, char** argv) {
     auto info = input->getInfo();
     int bitDepth = opts.bitDepth > 0 ? opts.bitDepth : info.bitDepth;
 
+    std::cerr << sk265::utils::LogFormat::formatInputBanner(input->getTag(), info, opts.seekFrame, opts.frameCount) << "\n";
+
     // 2. Dispatch to symmetric core router
     const x265_api* api = sk265::core::CoreRouter::getApi(bitDepth);
     if (!api) {
@@ -122,6 +125,8 @@ int main(int argc, char** argv) {
     if (isCustomTune) {
         sk265::core::TuningPreset::apply(param.raw(), tune);
     }
+
+    std::cerr << sk265::utils::LogFormat::formatPresetTuneBanner(preset, tune) << "\n";
 
     param->sourceWidth = info.width;
     param->sourceHeight = info.height;
@@ -159,14 +164,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    // 4. Open encoder instance
-    auto encoder = sk265::core::make_encoder_handle(api, param.raw());
-    if (!encoder) {
-        std::cerr << "sk265[error]: Failed to open x265 encoder instance\n";
-        return 1;
-    }
-
-    // 5. Open output destination
+    // 4. Open output destination
     auto output = std::move(muxerInstance.output);
 
     sk265::pipeline::output::OutputConfig outCfg;
@@ -193,6 +191,15 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    std::cerr << sk265::utils::LogFormat::formatOutputBanner(output->getTag(), opts.outputPath) << "\n";
+
+    // 5. Open encoder instance
+    auto encoder = sk265::core::make_encoder_handle(api, param.raw());
+    if (!encoder) {
+        std::cerr << "sk265[error]: Failed to open x265 encoder instance\n";
+        return 1;
+    }
+
     // 6. Write stream headers
     x265_nal* nals = nullptr;
     uint32_t nalCount = 0;
@@ -205,9 +212,6 @@ int main(int argc, char** argv) {
     }
 
     size_t queueCapacity = opts.queueConfig.resolveCapacity(info.width, info.height, bitDepth, info.colorSpace);
-    std::cerr << "sk265[info]: Encoding " << info.width << "x" << info.height
-              << " (" << bitDepth << "-bit) -> " << opts.outputPath
-              << " (Prefetch queue: " << queueCapacity << " frames)\n";
 
     // 7. Initialize asynchronous bounded prefetch queue and producer thread
     sk265::pipeline::BoundedQueue<sk265::pipeline::VideoFrame> queue(queueCapacity);
@@ -332,7 +336,7 @@ int main(int argc, char** argv) {
         std::chrono::steady_clock::now() - startTime).count();
     double fps = elapsedMs > 0 ? (framesEncoded * 1000.0 / elapsedMs) : 0.0;
 
-    std::cerr << "sk265[info]: Encoded " << framesEncoded << " frames in "
+    std::cerr << "\nsk265 [info]: Encoded " << framesEncoded << " frames in "
               << (elapsedMs / 1000.0) << "s (" << fps << " fps)\n";
 
     return sk265::utils::isInterrupted() ? 2 : 0;

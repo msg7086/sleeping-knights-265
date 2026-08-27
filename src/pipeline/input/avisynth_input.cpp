@@ -122,7 +122,7 @@ bool AviSynthInput::open(const std::string& path) {
     if (func_.avs_function_exists(env_, "VersionString")) {
         AVS_Value ver = func_.avs_invoke(env_, "VersionString", avs_new_value_array(nullptr, 0), nullptr);
         if (!avs_is_error(ver) && avs_is_string(ver)) {
-            std::cerr << "sk265[info]: " << avs_as_string(ver) << "\n";
+            std::cerr << "avs+ [info]: " << avs_as_string(ver) << "\n";
         }
         func_.avs_release_value(ver);
     }

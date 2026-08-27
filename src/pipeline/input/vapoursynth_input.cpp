@@ -118,7 +118,7 @@ bool VapourSynthInput::open(const std::string& path) {
         VSCoreInfo coreInfo{};
         vsApi_->getCoreInfo(core, &coreInfo);
         if (coreInfo.versionString) {
-            std::cerr << "sk265[info]: " << coreInfo.versionString << "\n";
+            std::cerr << "vpy  [info]: " << coreInfo.versionString << "\n";
         }
     }
 

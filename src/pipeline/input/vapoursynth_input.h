@@ -12,6 +12,7 @@ public:
     VapourSynthInput();
     ~VapourSynthInput() override;
 
+    [[nodiscard]] std::string_view getTag() const noexcept override { return "vpy "; }
     void setCustomLibraryPath(const std::string& customLibPath) { customLibPath_ = customLibPath; }
     void setSeekFrame(int64_t seekFrame) { seekFrame_ = seekFrame; }
 

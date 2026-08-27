@@ -191,7 +191,7 @@ bool LavfInput::open(const std::string& path) {
         return false;
     }
 
-    std::cerr << "sk265[info]: LAVF demuxer: " << impl_->formatCtx->iformat->name
+    std::cerr << "lavf [info]: demuxer: " << impl_->formatCtx->iformat->name
               << " (" << decoder->name << " " << impl_->info.width << "x" << impl_->info.height << ")\n";
 
     impl_->currentFrameIndex = 0;

@@ -12,6 +12,7 @@ public:
     GopOutput();
     ~GopOutput() override;
 
+    [[nodiscard]] std::string_view getTag() const noexcept override { return "gop+"; }
     bool open(const OutputConfig& config) override;
     bool writeHeaders(const x265_nal* nals, uint32_t nalCount) override;
     bool writeFrame(const x265_nal* nals, uint32_t nalCount, const x265_picture& pic) override;

@@ -38,6 +38,7 @@ public:
     AviSynthInput();
     ~AviSynthInput() override;
 
+    [[nodiscard]] std::string_view getTag() const noexcept override { return "avs+"; }
     void setCustomLibraryPath(const std::string& customLibPath) { customLibPath_ = customLibPath; }
     void setSeekFrame(int64_t seekFrame) { seekFrame_ = seekFrame; }
 

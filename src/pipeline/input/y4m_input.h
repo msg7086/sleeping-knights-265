@@ -11,6 +11,7 @@ public:
     Y4mInput();
     ~Y4mInput() override;
 
+    [[nodiscard]] std::string_view getTag() const noexcept override { return "y4m "; }
     bool open(const std::string& path) override;
     bool openFromStream(std::istream& stream);
     InputInfo getInfo() const override { return info_; }
