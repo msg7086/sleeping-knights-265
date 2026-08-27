@@ -14,6 +14,7 @@ add_executable(sk265
     pipeline/output/lavf_output.cpp
     pipeline/output/gop_output.cpp
     pipeline/output/output_factory.cpp
+    utils/log_mirror.cpp
 )
 
 target_link_libraries(sk265 PRIVATE

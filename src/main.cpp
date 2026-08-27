@@ -16,6 +16,7 @@
 #include "pipeline/bounded_queue.h"
 #include "utils/progress.h"
 #include "utils/signal_handler.h"
+#include "utils/log_mirror.h"
 #include "version.h"
 
 static void printBanner() {
@@ -34,6 +35,13 @@ int main(int argc, char** argv) {
     if (opts.showVersion) {
         std::cout << "sk265 version " << SK265_VERSION << "\n";
         return 0;
+    }
+
+    sk265::utils::LogMirror logMirror;
+    if (!opts.logFilePath.empty()) {
+        if (!logMirror.start(opts.logFilePath)) {
+            std::cerr << "sk265[warning]: Failed to open log file: " << opts.logFilePath << "\n";
+        }
     }
 
     printBanner();
