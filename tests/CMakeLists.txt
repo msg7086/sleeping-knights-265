@@ -13,6 +13,7 @@ add_executable(sk265_tests
     test_mp4_output.cpp
     test_lavf_output.cpp
     test_gop_output.cpp
+    test_async_output.cpp
     test_output_factory.cpp
     test_golden_cross_validation.cpp
     test_progress.cpp
@@ -32,6 +33,7 @@ add_executable(sk265_tests
     ../src/pipeline/output/mp4_output.cpp
     ../src/pipeline/output/lavf_output.cpp
     ../src/pipeline/output/gop_output.cpp
+    ../src/pipeline/output/async_output.cpp
     ../src/pipeline/output/output_factory.cpp
     ../src/utils/log_mirror.cpp
 )

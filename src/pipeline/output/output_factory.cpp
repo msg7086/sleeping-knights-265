@@ -3,6 +3,7 @@
 #include "pipeline/output/mp4_output.h"
 #include "pipeline/output/lavf_output.h"
 #include "pipeline/output/gop_output.h"
+#include "pipeline/output/async_output.h"
 #include <algorithm>
 #include <cctype>
 
@@ -67,7 +68,7 @@ OutputFactoryResult OutputFactory::create(const std::string& muxerParam, const s
             res.errorMessage = "Muxer 'gop' only supports GOP manifest files (.gop), got: " + outputPath;
             return res;
         }
-        res.instance.output = std::make_unique<GopOutput>();
+        res.instance.output = std::make_unique<AsyncOutput>(std::make_unique<GopOutput>());
         res.instance.muxerName = "gop";
         res.instance.bAnnexB = false;
         res.instance.bRepeatHeaders = false;
@@ -81,7 +82,7 @@ OutputFactoryResult OutputFactory::create(const std::string& muxerParam, const s
             res.errorMessage = "Muxer 'lsmash' only supports MP4/MOV container files (.mp4, .m4v, .mov), got: " + outputPath;
             return res;
         }
-        res.instance.output = std::make_unique<Mp4Output>();
+        res.instance.output = std::make_unique<AsyncOutput>(std::make_unique<Mp4Output>());
         res.instance.muxerName = "lsmash";
         res.instance.bAnnexB = false;
         res.instance.bRepeatHeaders = false;
@@ -95,7 +96,7 @@ OutputFactoryResult OutputFactory::create(const std::string& muxerParam, const s
             res.errorMessage = "Muxer 'lavf' is a container multiplexer and cannot output raw bitstream (" + outputPath + "), use '--muxer raw' instead";
             return res;
         }
-        res.instance.output = std::make_unique<LavfOutput>();
+        res.instance.output = std::make_unique<AsyncOutput>(std::make_unique<LavfOutput>());
         res.instance.muxerName = "lavf";
         res.instance.bAnnexB = true;
         res.instance.bRepeatHeaders = true;
@@ -109,7 +110,7 @@ OutputFactoryResult OutputFactory::create(const std::string& muxerParam, const s
             res.errorMessage = "Muxer 'raw' is for Annex-B bitstreams (.hevc, .h265, .265, .bin, .raw), cannot output to container file: " + outputPath;
             return res;
         }
-        res.instance.output = std::make_unique<RawOutput>();
+        res.instance.output = std::make_unique<AsyncOutput>(std::make_unique<RawOutput>());
         res.instance.muxerName = "raw";
         res.instance.bAnnexB = true;
         res.instance.bRepeatHeaders = true;
